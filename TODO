@@ -1,0 +1,24 @@
+
+TODO / WISHLIST:
+
+*) Modify the change routine to support Dynamic DNS updates and/or removal
+
+Add a "New To Network" routine to allow propagation of new routers that share most code and configurations, but not all (such as something new to the VPN group or similar, copied from an existing router). -- Need to	determine which parameters need to be "made clean."
+
+Add an interactive initialization, just to show the user where the directories point before starting the run -- give a chance to abort the backup in case the user doesn't like where things are pointed. -- blah
+
+Consider a combined execution method which would allow for an export and modification in one pass -- DONE
+
+Trap for ability to write to pwd, and if we can, output our completed files in the current working directory -- avoiding the /tmp traps. If user does not have write permission to the working directory, the we can continue to use /tmp as an option. No sense in writing to a far-off directory if we don't have to. Reduces the default filename length and makes the script somewhat easier to use in the long term. -- DONE
+
+Allow a pass-through for the intended export file at script invocation so user can choose the output file if they so choose. -- blah
+
+Need to finish the in-code documentation for this script -- I know what it is doing today, but I might not remember much of what I am thinking in a few months when I look at at again, or have to make updates to accommodate firmware change.
+
+Still need to find ways to reduce the number of file writes for the NVRAM environment. One possibility seems to stem around the idea of using sed files instead of what I'm doing. To go that direction, I will likely need to remove the 'nvram set' portions of the original dump file. -- reduced 2 files in this pass.
+
+Clean up the way I pass variables and parameters from the command line now that the whole program runs on functions and is structured. This will give me the ability to better control the command-line functions and possibly add future options for expansion. -- its better than it was.
+
+Update the final write of the script to verify whether an identical script exists in the directory -- if it does, don't write the new one (no sense in backing up identical backups...) This is to keep in line with the  long-term plan of using this script for unmanned archival backups. As of today I have a working version of this, but the busybox version compiled into the routers don't have the test command enabled. Must figure out how to fix this. -- for now, I'll put it in there with a conditional test for a running "test" command. if it's there we will run, and if it is not, well, we will just skip it. How's that for future-proofing? That also gives me the chance to export my own test binary with a distribution if I ever get that fancy. -- DONE
+		
+It appears that the NVRAM wipe process is not completely clearing the NVRAM. Identified by flashing a ybunt config over a cbunt config, and discovered that the OpenVPN server configuration was still in the new ybunt config (which should be an OpenVPN Client, not a server). NOTE: Wondering if this could be an artefact of the decision to use the "nodefaults" option in the original nvram dump process?
