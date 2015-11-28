@@ -6,7 +6,7 @@ Distributed under the terms of the MIT license. See LICENSE for details.
 
 **Introduction**
 
-Buntster's Tomato Router Management System (BTRMS) is an automoated methodology for the backup and restoration of Tomato router
+Buntster's Tomato Router Management System (BTRMS) is an automated tool for the backup and restoration of Shibby Tomato router
 configurations. The BTRMS backup methodology differs from the onboard backup tool in that it builds an executable shell script 
 file that restores system parameters line-by-line, rather than taking a snapshot "image" of the router's firmware. Doing so makes
 possible the removal of certain hardware-specific parameters (or any chosen parameters) from the configuration, allowing the
