@@ -1,7 +1,10 @@
-Buntster’s Tomato Router Maintenance System (BTRMS)
-Copyright © 2014, 2015 Chris A. Bunt
-All Rights Reserved
-Licensed under the MIT license. See "LICENSE" for details.
+###Buntster’s Tomato Router Maintenance System (BTRMS)###
+*Copyright © 2014, 2015 Chris A. Bunt*
+
+*All Rights Reserved*
+
+*Licensed under the MIT license. See "LICENSE" for details.*
+
 
 **What is the BTRMS?**
 
