@@ -30,7 +30,7 @@ RootDir=/jffs                       # Main working directory default
 BinDir="$RootDir/BTRMS-$VerTag"     # Main Binary Directory
 OutputRoot="$BinDir"                # Default. Can be changed at leisure.
 
-# Do not edit below this line unless you want to change the actual script.
+# Do not edit below this line unless you want to change the actual program.
 
 # Check for our core tools, and install if necessary.
 if [[ ! -x "/opt/bin/opkg" ]] ; then
