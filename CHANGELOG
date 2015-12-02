@@ -1,1 +1,135 @@
-DEPRECATED FILE
+Combined Changelog
+
+2015-12-02
+
+remote-exec.sh:
+    - Add test to verify that we're running inside a router. 
+    - Update entware installation methodology.
+    - Make minor changes to code syntax and formatting.
+    
+host_exec.sh:
+    - Clean up some comment syntax
+    - Move some variables around in the Initialization portion
+    
+Generic:
+    - Combine the TODO lists from both projects into a single
+    - Start a new changelog for the combined project.
+    
+2015-12-01 (host-exec.sh / remote-exec.sh)
+
+Changed the entware installation routine to go directly to the entware install
+    tools, allowing for a straight install of the latest entware without the 
+    two-step install/upgrade previously used.
+
+Identified a "miss" (bug) where remote_exec.sh doesn't trap whether we're
+    running in a router or a *nix environment. It probably doesn't hurt anything
+    but the error messages aren't pretty, and since remote_exec.sh is setup to
+    run more-or-less "blind" it should trap and fail outside the router.
+
+2015-11-22 (host-exec.sh / remote-exec.sh)
+
+Added logic to determine whether running from a router or some other *nix box,
+    and adjust the ssh/rsh behavior accordingly.
+    
+Removed some loops from host-exec.sh, did away with the need to write/read a 
+    temp file.
+    
+Added a re-check for writabiity in the backup storage directory. It was possible
+    to spec an unwritable directory, and without trapping the error, continue
+    to run the script while failing to save the backups locally. Now it will
+    bail. Probably not ideal, but better than *thinking* you have a backup.
+    
+Updated the parsing of remotehosts file, allowing for the ability to "comment
+    out" an entry, useful to temporarily disable a remote backup, or to use as
+    a placeholder for a future node.
+    
+Minor updates to the syntax of the output of remote-exec.sh, and fixed some 
+    comments in the script.
+
+
+#####################################################
+Version 1.2.1 (2015-05-25) -- transfersettings.sh
+#####################################################
+
+1) Updated logic to verify firmware version differences and force user to verify
+
+2) Added methodology to export, then immediately modify a restore script (Interactive/direct modification mode)
+
+3) Trap for the ability to write to the current directory, making for a cleaner overall execution, and making use of flash/mounted
+drives more friendly. -- DONE
+	
+4) Reduced the use of temp files by at least two, attempting to save the read/write process in flash memory (jffs, tmp, etc.)
+	
+5) Cleaned up some of the parameter passing from the command line
+
+6) Restructured some of the modules, combined a few single-use passes and renamed several modules to better reflect what they do.
+	
+7) Cleaned up the logic in the screen output routines to reflect the actual file or files built, their actual locations,
+and conditional printing of the filenames to reduce confusion to the end user.
+	
+8) Fixed a bug where passing an improper filename to the 'modify' routine caused an unclean exit. We now gracefully check 
+for the presence and writability of the file passed to modify.
+
+9) Added some extra output when in debug mode (module entry and exit). Probably	not very interesting but useful as hell 
+when chasing minor glitches.
+	
+10) Changed the bailout routine so that an existing directory isn't a kill-switch but the presence of a temp directory 
+is (allows for multiple copies of the restore script as an ongoing recovery methodology.) This results in a better
+logic flow for the routine, even if it *was* by accident. I'll take good luck over good planning any day of the week. 
+(Update: Debug version of this now clobbers the tmp directory and not the whole working directory.
+	
+11) Split the changelog file from the main code (this file). It was getting out	of hand, and will only get worse as I continue to
+overenginner this project
+	
+12) Fixed a bug where the outputfile in merge_export was appending from the very beginning. This worked fine under the original
+plan, but when adding the ability to modify a fresh script, was creating duplicate parameters. 
+	
+13) Updated CleanFiles routine to no longer leave empty directories behind.
+
+14) Cleaned up the restoration script dialogue. It was pretty utilitarian. Now it presents the original run date, the version it 
+was created with, the machine it was created on and a few other niceties.
+
+15) Added the code to test for duplicates in the output directory. If we get diff added to busybox, it'll run, if not, then it won't 
+even try. Adding difftools in optware solves the problem too if you have the memory. Allows for the possibility of importing your own
+diff binary.
+	
+16) Re-wrote the nvram commit routine -- modularized it, and setup a 15s pause	before commit followed by a 15s pause after commit.
+This wait time may be pure superstition or it may be legit, but it doesn't hurt anything.
+
+###################################################
+Version 1.1 (2014-12-16) 
+###################################################
+
+Removed extraneous nvram commits at the erase phase -- I think this may be the reason these routers are holding on to strange settings, 
+such as the OpenVPN Server configuration in routers that didn't originally have OpenVPN servers configured (identified when swapping a
+router config from bunt-77070-router-01 to ybunt-75125-router-01).
+
+Moved parameter router_hostname to priority parameters, and removed t_model_name to discarded parameters.
+
+Added function to determine whether we're being invoked from within a router environment, or another UNIX system. If not being invoked 
+from within a router, assume debug functionality and hard-code certain parameters that are dependent upon nvram commands.
+
+Added a $DEBUG variable that can be set. Main invocation is for running on a UNIX environment, but I may opt to allow the set of that
+variable as a usage option in the future.
+
+Given that the first check is whether the directory exists, and if it does not, then and only then do we create it, all the secondary 
+file checks are redundant. Removing them from this version, should provide faster execution, and more efficient processing.
+
+Changed the format of the "array-type" variables to more closely align with standard format of bash scripts. Turns out the escaped 
+newline sequence isn't required even under ash, but ash still doesn't support true array variables. This accomplishes nothing 
+significant but does allow for a cleaner-looking syntax and easier-to-explain formatting for future work.
+
+Began process of adding script modules from the other script into a single script. Will eventually write the code to control both 
+execution methods and provide the appropriate checks and balances to keep the end user from doing something nasty, like an unexpected 
+nvram erase on the router.
+
+Updated output script to verify user's intent to erase nvram of router, and to verify that the version of the script matches the 
+version of the firmware on the router. 
+
+Updated the way we deal with the temporary working files, moving them to an isolated directory--this way we can just kill the directory
+at clean-up time, and forget about the looping, tracking of specific files, and hopefully reduce the number of writes to the nvram file 
+system.
+
+Combined the export and modify routines into a single program/script
+
+Moved the large/arrayed variables directly into the supported modules
