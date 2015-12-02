@@ -11,6 +11,11 @@ host_exec.sh:
     - Clean up some comment syntax
     - Move some variables around in the Initialization portion
     
+transfersettings.sh
+    - Remove DebugNotify function and calls to it. It's no longer any
+    use, takes space, and serves to confuse real work
+    
+    
 Generic:
     - Combine the TODO lists from both projects into a single
     - Start a new changelog for the combined project.
