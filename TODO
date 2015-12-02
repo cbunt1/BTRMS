@@ -66,3 +66,13 @@ SECONDARY GOALS (Items under consideration):
     space on client routers with redundant files that will never be read or
     used anyway, which also prevents a few unnecessary writes to an already
     (potentially) delicate filesystem.
+    
+BEFORE WE CAN CALL THIS A RELEASE:
+
+1) Update the documentation to reflect a single set of integrated tools. The
+    current documentation reflects the original transfersettings.sh script and
+    a separate TR-AMS tool, and it is confusing as it is.
+    
+2) Change the methodology of the file pull for the remote hosts. Let's pull a
+    single file if we can (naming convention?) to reduce storage needs, and to
+    otherwise be good netizens.
