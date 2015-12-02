@@ -88,67 +88,33 @@ echo -e "
 CreateWorkDir()
 {
 #############################################################################
-# CreateWorkDir -- Quietly create temp working directory, provide some sanity
-#   checking. New version should create dir as necessary but not worry about
-#   presence of existing directory. Remove the debug lines for clarity. Better
-#   option might be to offer user a chance to fix and fall forward--condition
-#   should only occur if an escaped "modify" routine or prior crash
+# CreateWorkDir -- Quietly create temp working directory, provide framework
+#   for sanity checking or debugging should we need it later.
 ##############################################################################
 
-if [[ -n "$DEBUG" ]]    # Provide specialized output in Debug mode
-then
-	echo "NOTE: Working in DEBUG mode, script will delete working directory"
-	rm -Rf "$TmpDir"   # Clobber any existing directory
-	mkdir -p "$TmpDir"
-	echo \
-"==============================================================================
-Debug variables
-RouterName=$RouterName
-RunDate=$RunDate
-OSVer=$OSVer
-DEBUG=$DEBUG
-CmdLnOpt=$CmdLnOpt
-ModFileSource=$ModFileSource
-ModFileDest=$ModFileDest
-WorkDir=$WorkDir
-TmpDir=$TmpDir
-OutputFile=$OutputFile
-=============================================================================="
-
-elif [[ -d "$TmpDir" ]]    # Presence of $TmpDir indicates prior run/crash
-	then
-		echo "WARNING: Working directory already exists!" >&2
-		echo "Cannot continue. Swap file NOT created. Script terminated." >&2
-		exit 1
-else
-	echo -n "Creating working directory..."
-	mkdir  -p "$TmpDir"
-	echo ".done!"
-fi
+if [[ -d "$TmpDir" ]] ; then
+    rm -Rf "$TmpDir" ; fi  # Clobber any existing directory
+echo -n "Creating working directory..."
+mkdir  -p "$TmpDir"
+echo ".done!"
 }
 
 CleanTmpFiles()
 {
 ##############################################################################
-#
-# Quick routine to delete the working directory. Does not remove the directory
-# if debug mode is set. It also verifies that we aren't creating a duplicate
-#	export or modify script if we have a working 'diff' on board. 
-#
+# Clean up after ourselves. Delete the temp directory, and if for some reason
+#   we didn't write to $WorkDir, delete it. If we have working 'diff', Verify
+#   we aren't creating a duplicate export or modify script. 
 ##############################################################################
 
-if [[ -n "$DEBUG" ]]
+echo -e -n  "Removing temporary directory..."
+rm -Rf "$TmpDir"
+echo ".done!" 
+if [ ! "$(ls -A $WorkDir)" ]
 then
-    echo "DEBUG mode set, working files will not be deleted."
-else
-    echo -e -n  "Removing temporary directory..."
-    rm -Rf "$TmpDir"
-    echo ".done!" 
-	if [ ! "$(ls -A $WorkDir)" ]
-	then
-		rmdir "$WorkDir"
-	fi
+	rmdir "$WorkDir"
 fi
+
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
 if which diff &> /dev/null
 then
@@ -212,8 +178,7 @@ NVRAMExportRaw()
 echo -n "Exporting NVRAM to file.."
 if [[ -n "$DEBUG" ]]
 then
-    # cat "./nvramexportset" > "$TmpDir/TempFile-01"    #DEPRECATED CODE
-    echo "Cannot export nvram outside a router environment. Cowardly bailing!" &&
+    echo "Cannot export nvram outside a router environment. Cowardly exiting!" &&
     exit 1
 else
     nvram export --set > "$TmpDir/TempFile-01"
