@@ -6,7 +6,8 @@
 #   This is free software, and you are welcome to redistribute it.
 #   See the file LICENSE for details.
 ###############################################################################
-# BTRMS host-exec.sh -- This is the host-side executable. It runs on the host #   machine, and will connect to client routers remotely via certificate
+# BTRMS host-exec.sh -- This is the host-side executable. It runs on the host
+#   machine, and will connect to client routers remotely via certificate
 #   based ssh login (no password) and runs the remote script. 
 #
 # The script loops through a list of hostnames, defined in the file remotehosts
