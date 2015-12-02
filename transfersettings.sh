@@ -1,6 +1,12 @@
 #!/bin/sh
-ScriptVersion="1.2.1"
-##############################################################################
+###############################################################################
+# Copyright (C) 2015  Chris A. Bunt (cbunt1@yahoo.com)
+#   All rights reserved.
+#   This program comes with ABSOLUTELY NO WARRANTY.
+#   This is free software, and you are welcome to redistribute it.
+#   See the file LICENSE for details.
+###############################################################################
+###############################################################################
 #
 # GLOBALS -- These variables are used throughout the script. Edit them as
 #   necessary to support your specific environment
@@ -27,14 +33,16 @@ ScriptVersion="1.2.1"
 # $ModFileDest   	-RouterSwap Completed/merged script file
 # OutputFile	        -	-Final output file (export) (.sh)
 #
-##############################################################################
+###############################################################################
+ScriptVersion="1.2.1"
 clear
-echo "Buntster's Tomato Router Manipulation Tools, version $ScriptVersion"
-echo "Copyright (C) 2014, 2015  Chris A. Bunt"
+echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
+echo "Copyright (C) 2015  Chris A. Bunt"
 echo "This program comes with ABSOLUTELY NO WARRANTY."
 echo "This is free software, and you are welcome to redistribute it."
 echo "See the file LICENSE for details."
-echo "Initializing router manipulation script."
+echo "Initializing router maintenance script."
+
 echo -n "Setting global variables..."
 if [[ -x /bin/nvram ]]  # /bin/nvram only exists on router environments
 then
@@ -80,10 +88,11 @@ echo -e "
 CreateWorkDir()
 {
 #############################################################################
-#
-#	CreateWorkDir -- a quick routine to create our temp working directory
-#		accepts no inputs, has no visible output.
-#
+# CreateWorkDir -- Quietly create temp working directory, provide some sanity
+#   checking. New version should create dir as necessary but not worry about
+#   presence of existing directory. Remove the debug lines for clarity. Better
+#   option might be to offer user a chance to fix and fall forward--condition
+#   should only occur if an escaped "modify" routine or prior crash
 ##############################################################################
 
 if [[ -n "$DEBUG" ]]    # Provide specialized output in Debug mode
@@ -130,7 +139,6 @@ CleanTmpFiles()
 
 if [[ -n "$DEBUG" ]]
 then
-	DebugNotify "${FUNCNAME}" entry
     echo "DEBUG mode set, working files will not be deleted."
 else
     echo -e -n  "Removing temporary directory..."
@@ -140,10 +148,6 @@ else
 	then
 		rmdir "$WorkDir"
 	fi
-fi
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
 fi
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
 if which diff &> /dev/null
@@ -204,24 +208,18 @@ NVRAMExportRaw()
 # OUTPUTS: nvram dump in $TmpDir/TempFile-01
 #
 ##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 
 echo -n "Exporting NVRAM to file.."
 if [[ -n "$DEBUG" ]]
 then
-    cat "./nvramexportset" > "$TmpDir/TempFile-01"
+    # cat "./nvramexportset" > "$TmpDir/TempFile-01"    #DEPRECATED CODE
+    echo "Cannot export nvram outside a router environment. Cowardly bailing!" &&
+    exit 1
 else
     nvram export --set > "$TmpDir/TempFile-01"
     # tinker with idea of:  nvram export --set | sed -e 's/nvram set //g'
 fi
 echo ".done!"
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
@@ -246,10 +244,6 @@ ParameterExport()
 #             "DISCARD_PARAMS" -- Hardware-specific parameters to remove
 #
 ##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 PRIORITY_PARAMS="
 wan_
 lan_
@@ -334,11 +328,6 @@ fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-05"
 echo -n "."
 echo ".done!"
 
-
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
@@ -361,11 +350,6 @@ ParameterMod()
 # OUTPUTS: $TmpDir/TempFile-13, the sed script created with this function .
 #
 ##############################################################################
-
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 
 if [[ ! -r "$ModFileSource" ]]
 then
@@ -462,10 +446,6 @@ else
     echo ".done, no parameters changed!"
 fi
 
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
@@ -489,10 +469,6 @@ GenerateConfigScript()
 #
 ##############################################################################
 
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 echo \
 "#!/bin/sh
 ##############################################################################
@@ -505,9 +481,9 @@ echo \
 " > "$OutputFile"
 if [[ -n "$DEBUG" ]]
 then
-    echo "ORIGVERSION=\"$OSVer\"	###DIFFIGNORE###" >> "$OutputFile"
+    echo "ORIGVERSION=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
 else
-    echo "ORIGVERSION=\"`nvram get os_version`\"	###DIFFIGNORE###" >> "$OutputFile"
+    echo "ORIGVERSION=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 fi
 # Put variable outputs here, so we don't have to contend with quoting issues
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
@@ -643,10 +619,6 @@ do
 done
 echo ".done!" # should never get this far!
 ' >> "$OutputFile"
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
@@ -660,10 +632,6 @@ output()
 # OUTPUTS: Text to screen
 #
 ##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 echo \
 "Restoration script processing is complete. These scripts can be used to copy
 a configuration to a hardware-identical router."
@@ -699,52 +667,8 @@ echo \
 NOTE: The generated script(s) are designed to wipe your configuration as a
 first step. THIS IS A DESTRUCTIVE RESTORATION METHOD.
 "
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
-
-DebugNotify()
-{
-##############################################################################
-#
-# Debug option -- communicate module entry/exit status to user.
-# INPUTS: $1 mode (entry or exit), $2--Calling Module
-# OUTPUTS: Text to screen
-# RETURNS: none
-#
-##############################################################################
-
-# if DEBUG is 1 -- No, assume debug is 1 if this module is called.
-
-# Set up the parameters from the command line parameters.
-MODE="$2"
-ModuleName="$1"
-# set
-# echo "DebugNotify Routine"
-# echo "Parameters"
-# echo $@
-case $MODE in
-
-entry)
-	echo "Starting module $ModuleName()"
-;;
-
-exit)
-	echo "Exiting module $ModuleName()"
-;;
-
-*)
-	# Catch all for errors in syntax or other glitches
-	echo "Message from ${FUNCNAME}(): You broke it, 'cuz you're a gross ignoramus as a programmer."
-	return 1
-;;
-esac
-return 0
-}
-   
 
 case $CmdLnOpt in
 export)
@@ -783,18 +707,18 @@ output                            # Communicate with the user
 *)
 clear
 echo "
-usage: $0 [export|modify] [filename]
+USAGE: $0 [export|modify] [filename]
 
 OPTIONS
 
- export - Exports nvram configuration into a portable restoration script for
-	backup, or settings transfer to a hardware-identical router.
+export - Exports nvram configuration into a portable restoration script for
+    backup, or settings transfer to a hardware-identical router.
  
-modify - In interactive mode (default) creates a portable restoration i
-	identical to export mode, then allows direct modifications to several key
-	parameters as direct entry. Passing a [filename] performs modifies the
-	specified filename. 
-			
+modify - In interactive mode (default) creates a portable restoration identical
+    to export mode, then allows direct modifications to several key parameters 
+    as direct entry. Passing a [filename] performs modifies the specified 
+    pre-existing file. 
+
 [filename] -Optional existing filename to modify.
 
 This is free software. It comes with no warranty or guarantee of fitness
