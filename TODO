@@ -1,1 +1,68 @@
-DEPRECATED FILE
+2015-12-02 ToDo list for first combined version
+
+PRIMARY GOALS:
+
+1) Combine the BTRMS and the TR-AMS scripts into a single package. At this 
+    point TR-AMS is becoming the most useful way to install	and use the BTRMS
+    backup methodology in a distributed environment. This will probably require
+    a restructuring of the layout between the scripts, but may allow for the 
+    push of the working files directly from the host environment rather than
+    requiring the wget from githib (meaning we may not HAVE to install software
+    on every remote router to support an https wget.) The implications of this
+    merge remain to be determined.
+
+2) Consider a trap or output for the main script (transfersettings.sh) that will
+    tell us whether we have actually created a new file or not. No reason to
+    continually copy the same file back and forth if no incremental changes!
+    
+3) Add additional router/hardware types to the test in host-exec.sh. Currently
+    we only test for the mips hardware, but there are other hardware types out
+    there that may be running the tool. Let's be inclusive.
+    
+4) Add a "New To Network" routine to allow propagation of new routers that 
+    share most code and configurations, but not all (such as something new to 
+    the VPN group or similar, copied from an existing router). 	-- Need to
+    determine which parameters need to be "made clean."
+    
+5) Modify the change routine to verify that we're not creating Dynamic DNS or
+    OpenSSH VPN issues between different units.	Options include (a) Simply
+    stripping these parameters from the basic output, (b) adding them to the 
+    list of modify parameters, (c) Abandon the whole "in-script variable" 
+    concept and manage parameters with files (Consider how often the parameters
+    will change, how often preferences will differ among users, and how often 
+    the whole thing will be managed	from *nix enironments vs. on the router
+    environment and whether I'm just overthinking it and should leave well 
+    enough alone.)
+    
+SECONDARY GOALS (Items under consideration):
+
+1) Take anoher look at the file usage, and reduce at any point possible the 
+    number of writes to the delicate filesystem.
+
+2) Consider removing the debug code from the main script. At this point it's 
+    not really used, and makes the code more confusing.	I think the best 
+    approach is to consider leaving the "modify" (and any similar future modes)
+    capable of running in a *nix (non-router) environment, but do away with the
+    main script debugging--at least in production code. It's too confusing and
+    eats up too many useless code lines.
+    
+3) Update and combine the documentation. What started out as a simple solution 
+    to a configuration probem has morphed into a much more sophisticated
+    management tool, and while it's more complex than it needs to be, the
+    functionality is nice in my environment. With that said, nobody else would
+    even know most of the goodies are there.
+    
+4) Currently changing our ssh/dropbear methodology based on the machine type.
+    We could instead base our decision on presence of "real" ssh and rsh tools.
+    This is probably overkill since most who want to run this entirely in the
+    router environment probably doing so due to lack of a full-on *nix system
+    on hand. If there's demand for the "upgraded" router environment, I'll
+    address it.
+
+5) Merge the functionality of these wrapper/control scripts with the BTRMS
+    tool directly. No sense in having two separate distributions, and by merging
+    the two toolsets we might be able to better control some of the unnecessary
+    file transfers on initial setup. Advantages include not wasting storage
+    space on client routers with redundant files that will never be read or
+    used anyway, which also prevents a few unnecessary writes to an already
+    (potentially) delicate filesystem.
