@@ -1,0 +1,18 @@
+###############################################################################
+# remotehosts --  Support file for BTRMS automated backup tool
+# BTRMS Tools
+# Copyright (c) 2015 Chris A. Bunt
+# All rights reserved.
+# This program comes with ABSOLUTELY NO WARRANTY.
+# This is free software, and you are welcome to redistribute it.
+# See the file LICENSE for details.
+#
+# List machines to back up in this file. Use '#' as the first character on a
+# line to comment/ignore. Will *NOT* work with "field" comments, and will
+# generate errors.
+#
+# Empty lines will produce benign error messages.
+###############################################################################
+127.0.0.1
+your-router.example.com
+# EOF
