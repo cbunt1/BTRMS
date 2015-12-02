@@ -1,0 +1,10 @@
+2015-12-02 ToDo list for first combined version
+
+1) Consider a trap or output for the main script (transfersettings.sh) that will
+    tell us whether we have actually created a new file or not. No reason to
+    continually copy the same file back and forth if no incremental changes!
+    
+2) Add additional router/hardware types to the test in host-exec.sh. Currently
+    we only test for the mips hardware, but there are other hardware types out
+    there that may be running the tool. Let's be inclusive.
+    
