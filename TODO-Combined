@@ -1,5 +1,7 @@
 2015-12-02 ToDo list for first combined version
 
+PRIMARY GOALS:
+
 1) Combine the BTRMS and the TR-AMS scripts into a single package. At this 
     point TR-AMS is becoming the most useful way to install	and use the BTRMS
     backup methodology in a distributed environment. This will probably require
