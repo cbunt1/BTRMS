@@ -1,0 +1,15 @@
+###############################################################################
+# Copyright (c) 2015 Chris A. Bunt
+#   All rights reserved.
+#   This program comes with ABSOLUTELY NO WARRANTY.
+#   This is free software, and you are welcome to redistribute it.
+#   See the file LICENSE for details.
+###############################################################################
+# remotehosts --  Support file for BTRMS automated backup tool
+# List machines to back up in this file. Use '#' as the first character on a
+#   line to comment/ignore. Will *NOT* work with "field" comments, and will
+#   generate errors.
+# Empty lines will produce benign error messages.
+###############################################################################
+bunt-77070-router-03.buntster.lan
+# EOF
