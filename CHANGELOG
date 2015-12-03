@@ -1,68 +1,9 @@
-Combined Changelog
-
-2015-12-02
-
-remote-exec.sh:
-    - Add test to verify that we're running inside a router. 
-    - Update entware installation methodology.
-    - Make minor changes to code syntax and formatting.
-    
-host_exec.sh:
-    - Clean up some comment syntax
-    - Move some variables around in the Initialization portion
-    
-transfersettings.sh:
-    - Remove DebugNotify function and all references in code to it.
-    - Change DEBUG variable to ExtEnv to better identify future uses
-    - Remove Debug flagged code in NVRAMExportRaw, CreateWorkDir, and
-        CleanTmpFiles, 
-    - Changed methodology for creating temp and working directories,
-        eliminating unnecessary traps of existing directories and such.
-    - Cleaned up some syntax and documentation in the coding.
-    - Cleaned up some of the screen outputs and whitespacings
-    - Moved every "tab" to "space" that I could find
-    - Tested in router environment, and all looks well. Still need to clean up
-        some modify behavior in the *nix environment.
-
-    
-Generic:
-    - Combine the TODO lists from both projects into a single
-    - Start a new changelog for the combined project.
-    
-2015-12-01 (host-exec.sh / remote-exec.sh)
-
-Changed the entware installation routine to go directly to the entware install
-    tools, allowing for a straight install of the latest entware without the 
-    two-step install/upgrade previously used.
-
-Identified a "miss" (bug) where remote_exec.sh doesn't trap whether we're
-    running in a router or a *nix environment. It probably doesn't hurt anything
-    but the error messages aren't pretty, and since remote_exec.sh is setup to
-    run more-or-less "blind" it should trap and fail outside the router.
-
-2015-11-22 (host-exec.sh / remote-exec.sh)
-
-Added logic to determine whether running from a router or some other *nix box,
-    and adjust the ssh/rsh behavior accordingly.
-    
-Removed some loops from host-exec.sh, did away with the need to write/read a 
-    temp file.
-    
-Added a re-check for writabiity in the backup storage directory. It was possible
-    to spec an unwritable directory, and without trapping the error, continue
-    to run the script while failing to save the backups locally. Now it will
-    bail. Probably not ideal, but better than *thinking* you have a backup.
-    
-Updated the parsing of remotehosts file, allowing for the ability to "comment
-    out" an entry, useful to temporarily disable a remote backup, or to use as
-    a placeholder for a future node.
-    
-Minor updates to the syntax of the output of remote-exec.sh, and fixed some 
-    comments in the script.
+* 2015-11-29 *
+No changes to code. Only updating changelog to create a diff between the master and current release for remote get testing purposes.
 
 
 #####################################################
-Version 1.2.1 (2015-05-25) -- transfersettings.sh
+Version 1.2.1 (2015-05-25)
 #####################################################
 
 1) Updated logic to verify firmware version differences and force user to verify
@@ -147,3 +88,4 @@ system.
 Combined the export and modify routines into a single program/script
 
 Moved the large/arrayed variables directly into the supported modules
+
