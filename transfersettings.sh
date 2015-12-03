@@ -1,67 +1,54 @@
 #!/bin/sh
-ScriptVersion="1.2.1"
-##############################################################################
-#
-# GLOBALS -- These variables are used throughout the script. Edit them as
-#   necessary to support your specific environment
-#
-# RouterName is the router's hostname as reported by NVRAM
-# RunDate is the date and time the script is run
-# OSVer is the OS version as reported by NVRAM
-# WorkDir is the preferred working directory [DEFAULT: /tmp/~hostname~]
-# TmpDir is used to define the various files used within the script
-# OutputFile is the name of the final configuration script
-# 
-# TmpDir list (created by the script for processing. These are removed before
-#   the script exits, assuming it exits cleanly. If it stops, they will be left
-#   in the $WorkDir (usually /tmp/$RouterName).
-#
-# $TmpDir/TempFile-01	-NVRAM dump (RAW)
-# $TmpDir/TempFile-02 -Hardware parameters removed from $TmpDir/TempFile-03
-# $TmpDir/TempFile-03 -NVRAM file without hardware parameters 
-# $TmpDir/TempFile-04 -Network parameters only (FINAL)
-# $TmpDir/TempFile-05 -NVRAM file w/o HW or NW parameters (FINAL)
-# $TmpDir/TempFile-11 -RouterSwap list of parameters to change
-# $TmpDir/TempFile-12 -RouterSwap list of pre-change parameters and values
-# $TmpDir/TempFile-13 -RouterSwap sed script
-# $ModFileDest   	-RouterSwap Completed/merged script file
-# OutputFile	        -	-Final output file (export) (.sh)
-#
-##############################################################################
+###############################################################################
+# Copyright (C) 2015  Chris A. Bunt (cbunt1@yahoo.com)
+#   All rights reserved.
+#   This program comes with ABSOLUTELY NO WARRANTY.
+#   This is free software, and you are welcome to redistribute it.
+#   See the file LICENSE for details.
+###############################################################################
+###############################################################################
+# USER VARIABLES:
+#   WorkDir     -- The preferred working directory [DEFAULT: /tmp/~hostname~]
+#   TmpDir      -- Used to define the various files used within the script
+#   OutputFile  -- The name of the final configuration script
+#   ModFileDest -- RouterSwap Completed/merged script file
+#   OutputFile  -- Final output file (export) (.sh)
+###############################################################################
 clear
-echo "Buntster's Tomato Router Manipulation Tools, version $ScriptVersion"
-echo "Copyright (C) 2014, 2015  Chris A. Bunt"
+ScriptVersion="1.2.1"
+echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
+echo -e "Copyright (C) 2015  Chris A. Bunt" \n
 echo "This program comes with ABSOLUTELY NO WARRANTY."
 echo "This is free software, and you are welcome to redistribute it."
-echo "See the file LICENSE for details."
-echo "Initializing router manipulation script."
+echo -e "See the file LICENSE for details." \n
+echo "Initializing router maintenance script."
 echo -n "Setting global variables..."
 if [[ -x /bin/nvram ]]  # /bin/nvram only exists on router environments
 then
     # If invoking from within a router
     RouterName=`nvram get router_name`
-    RunDate=`date '+%F-%H%M'`
     OSVer=`nvram get os_version | cut -d ' ' -f2`
-    echo ".operating within a router!"
+    echo ".operating within a router."
 else
-    #if not invoking from within a router, assume debug mode
+    #if not invoking from within a router, setup external environment
     RouterName=`uname -n`
-    RunDate=`date '+%F-debug'`
     OSVer=`uname -i`
-    DEBUG=1
-    echo ".not running on a router! DEBUG options set!"
+    ExtEnv=1
+    echo ".running outside a router."
 fi
 # Remainder of variables work in either environment.
 echo -n "Testing to see if we can write to `pwd`.."
-	if [[ -w "./" ]]
-	then
-		echo ".yes!"
-		WorkDir="./$RouterName"
-	else
-		echo ".no, so we will use /tmp"
-		WorkDir="/tmp/$RouterName"
-	fi
+if [[ -w "./" ]]
+then
+    echo ".yes!"
+    WorkDir="./$RouterName"
+else
+    echo ".no, using /tmp"
+    WorkDir="/tmp/$RouterName"
+fi
+# USER AND GLOBAL VARIABLES
 TmpDir="$WorkDir/temp/"
+RunDate=`date '+%F-%H%M'`
 OutputFile="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer.sh"
 CmdLnOpt="$1"
 ModFileSource="$2"
@@ -79,177 +66,120 @@ echo -e "
 
 CreateWorkDir()
 {
-#############################################################################
-#
-#	CreateWorkDir -- a quick routine to create our temp working directory
-#		accepts no inputs, has no visible output.
-#
-##############################################################################
+###############################################################################
+# CreateWorkDir -- Quietly create temp working directory, provide framework
+#   for sanity checking or debugging should we need it later.
+###############################################################################
 
-if [[ -n "$DEBUG" ]]    # Provide specialized output in Debug mode
-then
-	echo "NOTE: Working in DEBUG mode, script will delete working directory"
-	rm -Rf "$TmpDir"   # Clobber any existing directory
-	mkdir -p "$TmpDir"
-	echo \
-"==============================================================================
-Debug variables
-RouterName=$RouterName
-RunDate=$RunDate
-OSVer=$OSVer
-DEBUG=$DEBUG
-CmdLnOpt=$CmdLnOpt
-ModFileSource=$ModFileSource
-ModFileDest=$ModFileDest
-WorkDir=$WorkDir
-TmpDir=$TmpDir
-OutputFile=$OutputFile
-=============================================================================="
-
-elif [[ -d "$TmpDir" ]]    # Presence of $TmpDir indicates prior run/crash
-	then
-		echo "WARNING: Working directory already exists!" >&2
-		echo "Cannot continue. Swap file NOT created. Script terminated." >&2
-		exit 1
-else
-	echo -n "Creating working directory..."
-	mkdir  -p "$TmpDir"
-	echo ".done!"
-fi
+if [[ -d "$TmpDir" ]] ; then
+    rm -Rf "$TmpDir" ; fi  # Clobber any existing directory
+echo -n "Creating working directory..."
+mkdir  -p "$TmpDir"
+echo ".done!"
 }
 
 CleanTmpFiles()
 {
 ##############################################################################
-#
-# Quick routine to delete the working directory. Does not remove the directory
-# if debug mode is set. It also verifies that we aren't creating a duplicate
-#	export or modify script if we have a working 'diff' on board. 
-#
+# Clean up after ourselves. Delete the temp directory, and if for some reason
+#   we didn't write to $WorkDir, delete it. If we have working 'diff', Verify
+#   we aren't creating a duplicate export or modify script. 
 ##############################################################################
 
-if [[ -n "$DEBUG" ]]
+echo -e -n  "Removing temporary directory..."
+rm -Rf "$TmpDir"
+echo ".done!" 
+if [ ! "$(ls -A $WorkDir)" ]
 then
-	DebugNotify "${FUNCNAME}" entry
-    echo "DEBUG mode set, working files will not be deleted."
-else
-    echo -e -n  "Removing temporary directory..."
-    rm -Rf "$TmpDir"
-    echo ".done!" 
-	if [ ! "$(ls -A $WorkDir)" ]
-	then
-		rmdir "$WorkDir"
-	fi
+    rmdir "$WorkDir"
 fi
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
+
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
 if which diff &> /dev/null
 then
-	DupSrcFileFlag=0
-	DupModFileFlag=0
-	echo -n "Checking for duplicate scripts.."
-	for FILENAME in `ls -1 "$WorkDir"`
-	do
-		TestFile=$WorkDir/${FILENAME}
-		if [ -f "$OutputFile" ]
-		then
-			if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && [[ ${TestFile} != "$OutputFile" ]]
-			then
-				DupSrcFileFlag=$((DupSrcFileFlag+1))
-				DupSourceFile=${TestFile}
-				rm ${OutputFile}
-				OutputFile=${DupSourceFile}
-			fi
-		fi
-		if [ -f "$ModFileDest" ]
-		then
-			if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && [[ ${TestFile} != "$ModFileDest" ]]
-			then
-				DupModFileFlag=$((DupModFileFlag+1))
-				DupModFile=${TestFile}
-				rm ${ModFileDest}
-				ModFileDest=${DupModFile}
-			fi
-		fi
-		echo -n "."
-	done
-	echo ".done"
-	# if [[ -n "$OutputFile" && "$DupSrcFileFlag" -gt 0 ]]
-	if [ $DupSrcFileFlag -gt 0 ]
-	then
-		echo "Keeping duplicate export file."
-	fi
-	# if [[ -n "$ModFileDest" && "$DupModFileFlag" -gt 0 ]]
-	if [ $DupModFileFlag -gt 0 ]
-	then
-		echo "Keeping duplicate modified file."
-	fi
+    DupSrcFileFlag=0
+    DupModFileFlag=0
+    echo -n "Checking for duplicate scripts.."
+    for FILENAME in `ls -1 "$WorkDir"`
+    do
+        TestFile=$WorkDir/${FILENAME}
+        if [ -f "$OutputFile" ]
+        then
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && [[ ${TestFile} != "$OutputFile" ]]
+            then
+                DupSrcFileFlag=$((DupSrcFileFlag+1))
+                DupSourceFile=${TestFile}
+                rm ${OutputFile}
+                OutputFile=${DupSourceFile}
+            fi
+        fi
+        if [ -f "$ModFileDest" ]
+        then
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && [[ ${TestFile} != "$ModFileDest" ]]
+            then
+                DupModFileFlag=$((DupModFileFlag+1))
+                DupModFile=${TestFile}
+                rm ${ModFileDest}
+                ModFileDest=${DupModFile}
+            fi
+        fi
+        echo -n "."
+    done
+    echo ".done"
+    if [ $DupSrcFileFlag -gt 0 ]
+    then
+        echo "Keeping existing export file."
+    fi
+    if [ $DupModFileFlag -gt 0 ]
+    then
+        echo "Keeping existing modified file."
+    fi
 else
-	echo "Sorry,no 'diff' binary on board, cannot check for duplicates."
+    echo "Sorry,no 'diff' binary on board, cannot check for duplicates."
 fi
 return 0   
 }
 
 NVRAMExportRaw()
 {
-##############################################################################
-#
-#   Export NVRAM contents to a working file. If running outside the router
+###############################################################################
+# Export NVRAM contents to a working file. If not running within a router then
+#   gracefully exit. 
 #   environment, copy the contents of a "nvramexportset" from current directory
-#
-# INPUTS: No specific inputs
 # OUTPUTS: nvram dump in $TmpDir/TempFile-01
-#
-##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
+###############################################################################
 
 echo -n "Exporting NVRAM to file.."
-if [[ -n "$DEBUG" ]]
+if [[ -n "$ExtEnv" ]]
 then
-    cat "./nvramexportset" > "$TmpDir/TempFile-01"
+    echo "Cannot export nvram outside a router environment. Cowardly exiting!" &&
+    exit 1
 else
     nvram export --set > "$TmpDir/TempFile-01"
-    # tinker with idea of:  nvram export --set | sed -e 's/nvram set //g'
 fi
 echo ".done!"
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
 ParameterExport()
 {
-##############################################################################
+###############################################################################
+# ParameterExport
 #
-# Function to prioritize the parameters and values in preparation for the final
-#   router script. Primary purpose is to set up network and other precursor
-#   parameters BEFORE the secondary parameters are passed into the config.
+# Prioritize particular primary parameters prior to producing (let's see how
+#   many "P's" we can get in here) the final router script. Currently pulls out
+#   the network parameters and sorts them to the top of the output stream,
+#   removes the troublesome parameters and exports the final list of parameters
 #
-# INPUTS: $TmpDir-03 -- file upon which to operate. No specific interactive 
-#   inputs, draws from PRIORITY_PARAMS hard coded array-style variable.
+# INPUTS:       $TmpDir/Tempfile-01 -- Raw nvram export file
 #
-# OUTPUTS: $TmpDir-05 -- final NVRAM file w/o Network or Hardware parameters, 
-#	file containing only the priority parameters with the problem parameters
-#	removed. Creates $TmpDir-4, $TmpDir-5 and $TmpDir-6 during parsing as
-#	interim steps.
+# OUTPUTS:      $TmpDir/TempFile-04 -- Final list of nvram network parameters
+#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters 
 #
-# VARIABLES:  "TROUBLE_PARAMS" -- Specifically identified trouble parameters
-#             "PRIORITY_PARAMS" -- to identify and adjust parameter order
-#             "DISCARD_PARAMS" -- Hardware-specific parameters to remove
-#
-##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
+# VARIABLES:    "TROUBLE_PARAMS"  -- Specifically identified trouble parameters
+#               "PRIORITY_PARAMS" -- to identify and adjust parameter order
+#               "DISCARD_PARAMS"  -- Hardware-specific parameters to remove
+###############################################################################
 PRIORITY_PARAMS="
 wan_
 lan_
@@ -301,7 +231,6 @@ wan_netmask
 
 TROUBLE_PARAMS="
 iptables
-
 "
 
 # Remove hardware specific and other problem parameters
@@ -318,7 +247,6 @@ fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" >> "$TmpDir/TempFile-03"
 echo ".done!"
 
 # Sort out the network specific entries
-
 echo -n "Parsing to separate network specifics..."
 for PARAMETER in $PRIORITY_PARAMS
 do
@@ -328,51 +256,35 @@ done
 echo ".done!"
 
 # Drop Duplicate Parameters
-
 echo -n "Removing duplicate parameters.."
 fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-05"
 echo -n "."
 echo ".done!"
-
-
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
 ParameterMod()
 {
-##############################################################################
-#
-# PURPOSE: Present the user with a series of existing parameter/value pairs
-#   and allow the option to change them. Verifies whether any changes were
-#   made and if no changes, does not write a file. If changes were made, it
-#   merges the changes back into the original file to create the final script.
+###############################################################################
+# ParameterMod
+# Present the user with a series of parameter/value pairs and allow the user to
+#   modify them. The function verifies whether any changes were made and if so
+#   will merge the changes back into the original file to create a final script
 #
 # INPUTS: $ModFileSource, router configuration script passed to the function. 
-#   Without this file we have nothing to manipulate.
 #
-# VARIABLES: CHANGE_PARAMS - An array-style variable containing the parameters
-#   that may be manipulated within the script, Internally, VARIABLE, VALUE_OLD,
-#	VALUE_NEW
+# USER VARIABLES: CHANGE_PARAMS - An array-style variable containing the 
+#   parameters that may be manipulated within the script
 #
-# OUTPUTS: $TmpDir/TempFile-13, the sed script created with this function .
-#
-##############################################################################
-
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
+# OUTPUTS: $ModFileDest: The updated router configuration script created here.
+###############################################################################
 
 if [[ ! -r "$ModFileSource" ]]
 then
-	echo "Cannot read $ModFileSource, check your file name and permissions."
-	echo "Cannot continue."
-	CleanTmpFiles
-	exit
+    echo "Cannot read $ModFileSource, check your file name and permissions."
+    echo "Cannot continue."
+    CleanTmpFiles
+    exit
 fi
 
 CHANGE_PARAMS="
@@ -418,8 +330,7 @@ done
 fgrep -v echo "$TmpDir/TempFile-11" >> "$TmpDir/TempFile-12"
 echo ".done!"
 
-# Update the identified parameters
-
+# Interactively update the identified parameters
 echo "
 ==============================================================================
 This is your opportunity to change the parameters in your router script
@@ -452,7 +363,6 @@ do
 done 
 
 # Now merge it back into the original script file
-
 echo -n "Merging changes into a final script.."
 if [[ -e "$TmpDir/TempFile-13" ]]
 then
@@ -461,91 +371,77 @@ then
 else
     echo ".done, no parameters changed!"
 fi
-
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
 GenerateConfigScript()
 {
-##############################################################################
-#
-# PURPOSE: Function to merge the parts of now split configuration into a 
-#   single configuration script that can be run on another router. This is 
-#	where it all comes together. BEWARE: The generated script is designed to
-#	wipe out your existing router configuration.
+###############################################################################
+# GenerateConfigScript
+# Merge the parts of now split configuration into a single configuration script
+#   that can be run on another router. This is where it all comes together. 
+#   n: The generated script is designed to wipe out your existing config.
 #
 # INPUTS:   $TmpDir/TempFile-04 -- Network parameters only, with 'nvram set'
 #           $TmpDir/TempFile-05 -- All other parameter w/'nvram set' stmt.
 #
 # OUTPUTS:  $OutputFile -- the final script completed, updated, and merged.
 #
-# VARIABLES:$OutputFile: Filename for the output file
-#           $TmpDir/TempFile-04: Filename for network parameters
-#           $TmpDir/TempFile-05: Filename for non-network/hardware parameters
-#
-##############################################################################
+# VARIABLE: $OutputFile: Filename for the output file
+###############################################################################
 
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 echo \
 "#!/bin/sh
-##############################################################################
+###############################################################################
 #
 # Auto-Generated script file to load the configuration of an Asus RT-66-AU
 #   router from one router to another. Using this script will erase any and
 #   all existing configurations on your router. USE WITH CARE!!
 #
-##############################################################################
+###############################################################################
 " > "$OutputFile"
-if [[ -n "$DEBUG" ]]
+if [[ -n "$ExtEnv" ]]
 then
-    echo "ORIGVERSION=\"$OSVer\"	###DIFFIGNORE###" >> "$OutputFile"
+    echo "ORIGVERSION=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
 else
-    echo "ORIGVERSION=\"`nvram get os_version`\"	###DIFFIGNORE###" >> "$OutputFile"
+    echo "ORIGVERSION=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 fi
 # Put variable outputs here, so we don't have to contend with quoting issues
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
 # for duplicate files. If you do not have a working diff it will not matter.
-echo "OrigRunDate=\"$RunDate\"	###DIFFIGNORE###" >> "$OutputFile"
-echo "OrigScriptVersion=\"$ScriptVersion\"	###DIFFIGNORE###" >> "$OutputFile"
-echo "OrigRouterName=\"$RouterName\"	###DIFFIGNORE###" >> "$OutputFile"
+echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
+echo "OrigScriptVersion=\"$ScriptVersion\"  ###DIFFIGNORE###" >> "$OutputFile"
+echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
 
 echo \ '
 WriteToNvram()
 {
 #############################################################################
-# Module to commit nvram and pause for 15 seconds on each side. This may o  #
-#   may not be a superstition, but it doesnt seem to hurt anything.			#
+# Module to commit nvram and pause for 15 seconds on each side. This may or #
+#   may not be a superstition, but it doesnt seem to hurt anything.         #
 #############################################################################
 
 echo -n "Save to NVRAM phase 1/2, this takes a few seconds..."
 ElapsedLoops=0
 while [ $ElapsedLoops -lt 15 ]
 do
-	echo -n "."
-	sleep 1s
-	ElapsedLoops=$((ElapsedLoops+1))
-	done
+    echo -n "."
+    sleep 1s
+    ElapsedLoops=$((ElapsedLoops+1))
+    done
 echo ".done!"
 nvram commit
 echo -n "Save to NVRAM phase 2/2, this takes a few seconds..."
 ElapsedLoops=0
 while [ $ElapsedLoops -lt 15 ]
 do
-	echo -n "."
-	sleep 1s
-	ElapsedLoops=$((ElapsedLoops+1))
-	done
+    echo -n "."
+    sleep 1s
+    ElapsedLoops=$((ElapsedLoops+1))
+    done
 echo ".done!"
 }
 ' >> "$OutputFile"
-
 echo \ '
 CURRENTVERSION="`nvram get os_version`"
 if [[ "$ORIGVERSION" != "$CURRENTVERSION" ]]
@@ -565,18 +461,17 @@ a different version.
 ORIGINAL FIRMWARE: $ORIGVERSION
 CURRENT FIRMWARE : $CURRENTVERSION
 
-This may present problems. These versions do not match. Proceed with care!	
+This may present problems. These versions do not match. Proceed with care!
 "
-	echo -n "YOU MUST ACKNOWLEDGE VERSION DIFFERENCE TO CONTINUE (y/N): "
-	read i
-	if [[ "$i" != "y" && "$i" != "Y" ]]
-	then
-		echo "Aborted by user!"
+    echo -n "YOU MUST ACKNOWLEDGE VERSION DIFFERENCE TO CONTINUE (y/N): "
+    read i
+    if [[ "$i" != "y" && "$i" != "Y" ]]
+    then
+        echo "Aborted by user!"
     exit 0
-	fi
+    fi
 fi
 clear
-
 echo -e "
 ==============================================================================
                   Buntsters Tomato Router Manipulation Tools
@@ -596,8 +491,6 @@ unless 10 minutes have passed and you are not seeing results.
 This script will erase any and all contents of the NVRAM on this router and
 replace it with the configuration in this script. THIS CANNOT BE UNDONE!!
 "
-
-
 echo -n "Are you sure you want to continue? (y/N): "
 read i
 if [[ "$i" != "y" && "$i" != "Y" ]]
@@ -617,15 +510,15 @@ echo \
 echo "Committing network parameters to NVRAM..."
 WriteToNvram
 echo "Network parameters commited to NVRAM!"
-echo "Now entering main set of parameters..."
+echo "Now entering remaining parameters..."
 ' >> "$OutputFile"
 cat "$TmpDir/TempFile-05" >> "$OutputFile"
 echo \
 '
-echo "Main parameters entered!"
-echo "Committing main parameters to NVRAM..."
+echo "All parameters entered!"
+echo "Committing parameters to NVRAM..."
 WriteToNvram
-echo "Main parameters committed!"
+echo "Parameters committed to NVRAM!"
 echo "Configuration loaded and committed to NVRAM."
 echo "Rebooting the router to start under new configuration"
 echo
@@ -638,113 +531,49 @@ reboot > /dev/null
 echo -n "Rebooting..."
 while true
 do
-	echo -n "."
-	sleep 1s
+    echo -n "."
+    sleep 1s
 done
 echo ".done!" # should never get this far!
 ' >> "$OutputFile"
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
 
 output()
 {
 ##############################################################################
-#
-# Communicate final information to the user.
-# INPUTS: $OutputFile, $ModFileSource, $ModFileDest, filenames generated by
-#	other modules up to this point.
-# OUTPUTS: Text to screen
-#
+# Communicate final information to the user, identifying the locations of the
+#   files modified, stored, and output.
 ##############################################################################
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" entry
-fi
 echo \
-"Restoration script processing is complete. These scripts can be used to copy
-a configuration to a hardware-identical router."
-
-if [[ -r "$OutputFile" ]]
-then
-	echo \
+"
+Buntster's Tomato Router Maintenance System has created an executable shell
+script that can be used to copy a configuration to a hardware-identical router.
+"
+if [[ -r "$OutputFile" ]] ; then
+echo \
 "The NVRAM configuration of $RouterName has been backed up.
 The exported configuration script is stored at:
-
 $OutputFile
 "
-elif [[ -r "$ModFileSource" ]]
-then
-	echo \
-"The original configuration file has not been changed. It is located at:
-
+elif [[ -r "$ModFileSource" ]] ; then
+echo \
+"The original configuration file has not been changed. It is stored at:
 $ModFileSource
-"
-fi
+" ; fi
 
-if [[ -r "$ModFileDest" ]]
-then
-	echo \
+if [[ -r "$ModFileDest" ]] ; then
+echo \
 "Your updates have been merged into the updated configuration script stored at:
-
 $ModFileDest
-"
-fi
-
+" ; fi
 echo \
 "Simply copy the script(s) to the target router, make it executable, and run.
 NOTE: The generated script(s) are designed to wipe your configuration as a
 first step. THIS IS A DESTRUCTIVE RESTORATION METHOD.
 "
-if [[ -n "$DEBUG" ]]
-then
-	DebugNotify "${FUNCNAME}" exit
-fi
 return 0
 }
-
-DebugNotify()
-{
-##############################################################################
-#
-# Debug option -- communicate module entry/exit status to user.
-# INPUTS: $1 mode (entry or exit), $2--Calling Module
-# OUTPUTS: Text to screen
-# RETURNS: none
-#
-##############################################################################
-
-# if DEBUG is 1 -- No, assume debug is 1 if this module is called.
-
-# Set up the parameters from the command line parameters.
-MODE="$2"
-ModuleName="$1"
-# set
-# echo "DebugNotify Routine"
-# echo "Parameters"
-# echo $@
-case $MODE in
-
-entry)
-	echo "Starting module $ModuleName()"
-;;
-
-exit)
-	echo "Exiting module $ModuleName()"
-;;
-
-*)
-	# Catch all for errors in syntax or other glitches
-	echo "Message from ${FUNCNAME}(): You broke it, 'cuz you're a gross ignoramus as a programmer."
-	return 1
-;;
-esac
-return 0
-}
-   
 
 case $CmdLnOpt in
 export)
@@ -769,42 +598,38 @@ modify)
 CreateWorkDir                     # Create a working directory
 if [[ -z "$ModFileSource" ]]
 then
-	echo "ModFileSource not passed at command line, means we need to create"
-	NVRAMExportRaw                  # Exports the contents of the running NVRAM
-	ParameterExport                 # Re-order the parameters loaded
-	GenerateConfigScript            # Builds the configuration script
-	ModFileSource="$OutputFile"     # Modify the file we just created
+    echo "ModFileSource not passed at command line, means we need to create"
+    NVRAMExportRaw              # Exports the contents of the running NVRAM
+    ParameterExport             # Re-order the parameters loaded
+    GenerateConfigScript        # Builds the configuration script
+    ModFileSource="$OutputFile" # Modify the file we just created
 fi
-ParameterMod                      # Change parameters and merge script
-CleanTmpFiles                     # Cleans up temporary directories
-output                            # Communicate with the user
+ParameterMod                    # Change parameters and merge script
+CleanTmpFiles                   # Cleans up temporary directories
+output                          # Communicate with the user
 ;;
 
 *)
 clear
 echo "
-usage: $0 [export|modify] [filename]
+USAGE: $0 [export|modify] [filename]
 
 OPTIONS
 
- export - Exports nvram configuration into a portable restoration script for
-	backup, or settings transfer to a hardware-identical router.
+export      Exports nvram configuration into a portable restoration script for
+            backup, or settings transfer to a hardware-identical router.
  
-modify - In interactive mode (default) creates a portable restoration i
-	identical to export mode, then allows direct modifications to several key
-	parameters as direct entry. Passing a [filename] performs modifies the
-	specified filename. 
-			
-[filename] -Optional existing filename to modify.
+modify      In interactive mode (default) creates a portable restoration identical
+            to export mode, then allows direct modifications to several key 
+            parameters as direct entry. Passing a [filename] performs modifies 
+            the specified pre-existing file. 
 
-This is free software. It comes with no warranty or guarantee of fitness
-or usability. If it breaks your router in two, you own both parts. If you wish
-to add or modify the functionality, have at it. I'd love to get a copy to see
-what you did or learn a better way to do it. I hope you find it as useful as
-I do. I've spent too many hours automating a 15 minute task for the whole
-thing to go to waste!
+[filename]  Optional existing filename to modify.
+
+Copyright (c) 2015 Chris A. Bunt (cbunt1@yahoo.com)
+This program comes with ABSOLUTELY NO WARRANTY.
+This is free software, and you are welcome to redistribute it.
+See the file LICENSE for details.
 "
-
 ;;
-   
 esac
