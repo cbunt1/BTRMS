@@ -55,12 +55,12 @@ ModFileSource="$2"
 ModFileDest="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer-mod.sh"
 echo -e "
 ==============================================================================
-                  Buntster's Tomato Router Manipulation Tools
+                Buntster's Tomato Router Maintenance Tools
 ==============================================================================
-\e[0;33mTomato router manipulation tool run on : \e[0;32m$RunDate\e[0m
-\e[0;33mRouter name is                         : \e[0;32m$RouterName\e[0m
-\e[0;33mCurrent software version is            : \e[0;32m$OSVer\e[0m
-\e[0;33mCreating working directory             : \e[0;32m$WorkDir\e[0m
+\e[0;33mTomato router maintenance tool run on   : \e[0;32m$RunDate\e[0m
+\e[0;33mRouter name is                          : \e[0;32m$RouterName\e[0m
+\e[0;33mCurrent software version is             : \e[0;32m$OSVer\e[0m
+\e[0;33mCreating working directory              : \e[0;32m$WorkDir\e[0m
 ==============================================================================
 \e[0m "
 
@@ -80,11 +80,11 @@ echo ".done!"
 
 CleanTmpFiles()
 {
-##############################################################################
+###############################################################################
 # Clean up after ourselves. Delete the temp directory, and if for some reason
 #   we didn't write to $WorkDir, delete it. If we have working 'diff', Verify
 #   we aren't creating a duplicate export or modify script. 
-##############################################################################
+###############################################################################
 
 echo -e -n  "Removing temporary directory..."
 rm -Rf "$TmpDir"
@@ -105,7 +105,8 @@ then
         TestFile=$WorkDir/${FILENAME}
         if [ -f "$OutputFile" ]
         then
-            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && [[ ${TestFile} != "$OutputFile" ]]
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && 
+				[[ ${TestFile} != "$OutputFile" ]]
             then
                 DupSrcFileFlag=$((DupSrcFileFlag+1))
                 DupSourceFile=${TestFile}
@@ -115,7 +116,8 @@ then
         fi
         if [ -f "$ModFileDest" ]
         then
-            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && [[ ${TestFile} != "$ModFileDest" ]]
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && 
+				[[ ${TestFile} != "$ModFileDest" ]]
             then
                 DupModFileFlag=$((DupModFileFlag+1))
                 DupModFile=${TestFile}
@@ -137,7 +139,7 @@ then
 else
     echo "Sorry,no 'diff' binary on board, cannot check for duplicates."
 fi
-return 0   
+return 0
 }
 
 NVRAMExportRaw()
@@ -174,7 +176,7 @@ ParameterExport()
 # INPUTS:       $TmpDir/Tempfile-01 -- Raw nvram export file
 #
 # OUTPUTS:      $TmpDir/TempFile-04 -- Final list of nvram network parameters
-#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters 
+#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters
 #
 # VARIABLES:    "TROUBLE_PARAMS"  -- Specifically identified trouble parameters
 #               "PRIORITY_PARAMS" -- to identify and adjust parameter order
@@ -412,7 +414,6 @@ fi
 echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
 echo "OrigScriptVersion=\"$ScriptVersion\"  ###DIFFIGNORE###" >> "$OutputFile"
 echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
-
 echo \ '
 WriteToNvram()
 {
@@ -577,9 +578,9 @@ return 0
 
 case $CmdLnOpt in
 export)
-##############################################################################
+###############################################################################
 # Configuration Export Routine
-##############################################################################
+###############################################################################
 
 CreateWorkDir         # Create a working directory
 NVRAMExportRaw        # Exports the contents of the running NVRAM to a file
@@ -591,11 +592,11 @@ output                # Communicate with the user
 
 modify)
 
-##############################################################################
+###############################################################################
 # Router Swap Script Routine
-##############################################################################
+###############################################################################
 
-CreateWorkDir                     # Create a working directory
+CreateWorkDir                   # Create a working directory
 if [[ -z "$ModFileSource" ]]
 then
     echo "ModFileSource not passed at command line, means we need to create"
@@ -619,10 +620,10 @@ OPTIONS
 export      Exports nvram configuration into a portable restoration script for
             backup, or settings transfer to a hardware-identical router.
  
-modify      In interactive mode (default) creates a portable restoration identical
-            to export mode, then allows direct modifications to several key 
+modify      In interactive mode (default) creates a portable restoration just
+			like export mode, then allows direct modifications to several key 
             parameters as direct entry. Passing a [filename] performs modifies 
-            the specified pre-existing file. 
+            the specified pre-existing file.
 
 [filename]  Optional existing filename to modify.
 
