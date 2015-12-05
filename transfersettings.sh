@@ -417,10 +417,11 @@ echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
 echo \ '
 WriteToNvram()
 {
-#############################################################################
-# Module to commit nvram and pause for 15 seconds on each side. This may or #
-#   may not be a superstition, but it doesnt seem to hurt anything.         #
-#############################################################################
+###############################################################################
+# Module to commit nvram and pause for 15 seconds on each side. The wait time #
+#   may or may not be a superstition, but it doesnt seem to hurt anything.    #
+#   No harm, no foul, watch the cool dotted output.                           #
+###############################################################################
 
 echo -n "Save to NVRAM phase 1/2, this takes a few seconds..."
 ElapsedLoops=0

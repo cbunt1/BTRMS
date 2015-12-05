@@ -1,0 +1,46 @@
+devnotes for transfersettings.sh
+
+### Branch: Fix_Linux ### -- track in local repo, do not push or pull.
+
+### SCOPE OF BRANCH: To fix (complete?) the functions and methods that work
+	within the Linux environment, independent of the router itself.
+	
+	Primary goal: To be able to modify exisitng scripts "offline" so that if 
+		one is so inclined, he can create one-off's from an existing good script
+		without having to do the work in a router environment.
+    
+* Scenario: Running in *nix, should be able to modify an exisitng script, but
+    export and modify w/no filename should fail cleanly. May want to consider
+    checking the environment in the output script too--just to keep someone
+    from doing something stupid.    
+    
+GenerateConfigScript() -- (482) Flag is used to modify ORIGVERSION output
+    to the output file. Looks like intent is to feed a fixed $OSVer to
+    the header of the output file rather than gathering it from the
+    active nvram. I wonder if this shouldn't be variable controlled
+    regardess of invocation method.
+    
+Note: The time & Date aren't used to modify anything except the filename in the
+    "modify" routine. Therefore we should be able to easily modify the script
+    to allow for modification of an exisitng script in a *nix environment.
+    
+Process the logic for a named file modification....
+    Entry point: ./transfersettings modify filename
+    set variables:  RouterName=current router name (differs between env)
+                    OSVer=current OS version (differs between ver)
+                    ExtEnv=1 (if outside a router)
+                    WorkDir="./RouterName" (if writable, else /tmp/RouterName)
+                    TmpDir=WorkDir/temp
+                    Rundate=2015-12-02-1853
+                    OutputFile="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer.sh"
+                    CmdLnOpt=$1 (First parameter passed, modify or export)
+                    ModFileSource=$2 (filename -- 2nd parameter passed)
+                    ModFileDest="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer-mod.sh"
+            Call Functions:
+                CreateWorkDir -- no relevant changes
+                if nonzero $2 (filename passed)
+                go to parametermod
+                    --therefore, either test for presence of file in the case,
+                    or in the first part of ParameterMod
+    
+
