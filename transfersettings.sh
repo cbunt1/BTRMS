@@ -294,26 +294,41 @@ fi
 # Then make any necessary changes for a non-router environment
 ######## Begin New Code ######
 if [[ -n "$ExtEnv" ]] ; then
-    echo "WorkDir =$WorkDir"
-    #
-    # If operating in *nix environment, change $WorkDir to `pwd` if writable. We
-    #   already verified that pwd is writable or it's already been moved to /tmp
-    # Final logic: If *nix env, and $WorkDir !=/tmp then $WorkDir=`pwd`
-    #
+    
+    for NewCommnd in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
+        echo "$NewCommnd"
+        # $("$NewCommnd")
+        eval "$NewCommnd"  # WORKS! -- There's a better way, but this works.
+        # $("${NewCommnd}")
+    done
+    OSVer=`echo "$OrigVersion" | cut -d ' ' -f2`
+    ModFileDest="$OrigRunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
+    echo "OSVer=$OSVer"                                     #DEBUG
+    echo "WorkDir =$WorkDir"                                #DEBUG
+    echo "OrigScriptVersion=$OrigScriptVersion"             #DEBUG
+    echo "OrigRouterName=$OrigRouterName"                   #DEBUG
+    echo "OrigRunDate=$OrigRunDate"                         #DEBUG
+    echo "OrigVersion=$OrigVersion"                         #DEBUG
+    echo "ModFileDest=$ModFileDest"                         #DEBUG
+    # echo "Running outside router, exiting as Debug step"    #DEBUG
+    # exit                                                    #DEBUG
+ 
     # If *nix environment then:
-    #   Change $WorkDir (if $WorkDir !=/tmp then $WorkDir=`pwd`)
     #   Grep for 
     #       OrigRouterName="bunt-77070-router-03"    ###DIFFIGNORE###
     #       OrigRunDate="2015-12-03-0349"  ###DIFFIGNORE###
     #       OrigVersion="1.28.0000 MIPSR2-131 K26AC USB VPN-64K"    ###DIFFIGNORE###
     #
-    #   Change $OSVer to OrigVersion
+    #   Change $OSVer to OrigVersion (nb: output should be full version, name
+    #       should be truncated to MIPSR2-131 or similar. How did we do that
+    #       earlier in the program?) 
+    #       Like this!: OSVer=`nvram get os_version | cut -d ' ' -f2`
+    #       Need to keep the full string for the output script (OrigVersion)
+    #       and work with $OSVer.
+    #
     # Set $ModFileDest appropriately (This was set at initialization, so can mod
     #   here with no reprecussions.)
-    #
     # Then carry on with our rat-killing as normal
-echo "Running outside router, exiting as Debug step"    # DEBUG
-exit    #DEBUG
 fi
 
 ######### Original code below this line ##################
@@ -353,7 +368,7 @@ wl1.1_wpa_psk
 wl_wpa_psk
 "
 
-echo -n "Parsing to separate network specifics..."
+echo -n "Parsing to separate updatable parameters..."
 for PARAMETER in $CHANGE_PARAMS
 do
     fgrep "$PARAMETER" "$ModFileSource" | sed -e 's/nvram set //g' >> "$TmpDir/TempFile-11"
@@ -403,6 +418,7 @@ then
 else
     echo ".done, no parameters changed!"
 fi
+# exit                            # DEBUG
 return 0
 }
 
@@ -434,7 +450,7 @@ echo \
 " > "$OutputFile"
 if [[ -n "$ExtEnv" ]]
 then
-    echo "OrigVersion=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
+    echo "OrigVersion=\"$OrigVersion\"    ###DIFFIGNORE###" >> "$OutputFile"
 else
     echo "OrigVersion=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 fi
