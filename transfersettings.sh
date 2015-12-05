@@ -1,6 +1,6 @@
 #!/bin/sh
 ###############################################################################
-# Copyright (C) 2015  Chris A. Bunt (cbunt1@yahoo.com)
+# Copyright (c) 2015  Chris A. Bunt (cbunt1@yahoo.com)
 #   All rights reserved.
 #   This program comes with ABSOLUTELY NO WARRANTY.
 #   This is free software, and you are welcome to redistribute it.
@@ -41,7 +41,9 @@ echo -n "Testing to see if we can write to `pwd`.."
 if [[ -w "./" ]]
 then
     echo ".yes!"
+    if [[ -n "ExtEnv" ]] ; then WorkDir=`pwd` ; else
     WorkDir="./$RouterName"
+    fi
 else
     echo ".no, using /tmp"
     WorkDir="/tmp/$RouterName"
@@ -281,6 +283,7 @@ ParameterMod()
 # OUTPUTS: $ModFileDest: The updated router configuration script created here.
 ###############################################################################
 
+# First, check that we can read the source file
 if [[ ! -r "$ModFileSource" ]]
 then
     echo "Cannot read $ModFileSource, check your file name and permissions."
@@ -288,6 +291,33 @@ then
     CleanTmpFiles
     exit
 fi
+# Then make any necessary changes for a non-router environment
+######## Begin New Code ######
+if [[ -n "$ExtEnv" ]] ; then
+    echo "WorkDir =$WorkDir"
+    #
+    # If operating in *nix environment, change $WorkDir to `pwd` if writable. We
+    #   already verified that pwd is writable or it's already been moved to /tmp
+    # Final logic: If *nix env, and $WorkDir !=/tmp then $WorkDir=`pwd`
+    #
+    # If *nix environment then:
+    #   Change $WorkDir (if $WorkDir !=/tmp then $WorkDir=`pwd`)
+    #   Grep for 
+    #       OrigRouterName="bunt-77070-router-03"    ###DIFFIGNORE###
+    #       OrigRunDate="2015-12-03-0349"  ###DIFFIGNORE###
+    #       OrigVersion="1.28.0000 MIPSR2-131 K26AC USB VPN-64K"    ###DIFFIGNORE###
+    #
+    #   Change $OSVer to OrigVersion
+    # Set $ModFileDest appropriately (This was set at initialization, so can mod
+    #   here with no reprecussions.)
+    #
+    # Then carry on with our rat-killing as normal
+echo "Running outside router, exiting as Debug step"    # DEBUG
+exit    #DEBUG
+fi
+
+######### Original code below this line ##################
+
 
 CHANGE_PARAMS="
 router_name
@@ -404,9 +434,9 @@ echo \
 " > "$OutputFile"
 if [[ -n "$ExtEnv" ]]
 then
-    echo "ORIGVERSION=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
+    echo "OrigVersion=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
 else
-    echo "ORIGVERSION=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
+    echo "OrigVersion=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 fi
 # Put variable outputs here, so we don't have to contend with quoting issues
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
