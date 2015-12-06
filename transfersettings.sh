@@ -97,14 +97,15 @@ then
 fi
 
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
-if which diff &> /dev/null
+# But only if we were invoked inside a router.
+if which diff &> /dev/null && [[ ! -n "$ExtEnv" ]]
 then
     DupSrcFileFlag=0
     DupModFileFlag=0
     echo -n "Checking for duplicate scripts.."
-    for FILENAME in `ls -1 "$WorkDir"`
+    for FileName in `ls -1 "$WorkDir"`
     do
-        TestFile=$WorkDir/${FILENAME}
+        TestFile=$WorkDir/${FileName}
         if [ -f "$OutputFile" ]
         then
             if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && 
@@ -112,14 +113,14 @@ then
             then
                 DupSrcFileFlag=$((DupSrcFileFlag+1))
                 DupSourceFile=${TestFile}
-                rm ${OutputFile}
+               rm ${OutputFile}
                 OutputFile=${DupSourceFile}
             fi
         fi
         if [ -f "$ModFileDest" ]
         then
             if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && 
-				[[ ${TestFile} != "$ModFileDest" ]]
+				[[ ${TestFile} != "$ModFileDest" ]] # Seems like we can put some logic here
             then
                 DupModFileFlag=$((DupModFileFlag+1))
                 DupModFile=${TestFile}
@@ -139,7 +140,7 @@ then
         echo "Keeping existing modified file."
     fi
 else
-    echo "Sorry,no 'diff' binary on board, cannot check for duplicates."
+    echo "Not checking for duplicate scripts."
 fi
 return 0
 }
@@ -458,7 +459,7 @@ fi
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
 # for duplicate files. If you do not have a working diff it will not matter.
 echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
-echo "OrigScriptVersion=\"$ScriptVersion\"  ###DIFFIGNORE###" >> "$OutputFile"
+echo "OrigScriptVersion=\"$ScriptVersion" >> "$OutputFile"
 echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
 echo \ '
 WriteToNvram()
