@@ -41,7 +41,7 @@ echo -n "Testing to see if we can write to `pwd`.."
 if [[ -w "./" ]]
 then
     echo ".yes!"
-    if [[ -n "ExtEnv" ]] ; then WorkDir=`pwd` ; else
+    if [[ -n "$ExtEnv" ]] ; then WorkDir=`pwd` ; else
     WorkDir="./$RouterName"
     fi
 else
@@ -98,7 +98,7 @@ fi
 
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
 # But only if we were invoked inside a router.
-if which diff &> /dev/null && [[ ! -n "$ExtEnv" ]]
+if which diff &> /dev/null
 then
     DupSrcFileFlag=0
     DupModFileFlag=0
@@ -113,14 +113,14 @@ then
             then
                 DupSrcFileFlag=$((DupSrcFileFlag+1))
                 DupSourceFile=${TestFile}
-               rm ${OutputFile}
+                rm ${OutputFile}
                 OutputFile=${DupSourceFile}
             fi
         fi
         if [ -f "$ModFileDest" ]
         then
             if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && 
-				[[ ${TestFile} != "$ModFileDest" ]] # Seems like we can put some logic here
+				[[ ${TestFile##*/} != "$ModFileDest" ]] && [[ ${TestFile} != "$ModFileDest"  ]] # Seems like we can put some logic here
             then
                 DupModFileFlag=$((DupModFileFlag+1))
                 DupModFile=${TestFile}
@@ -130,7 +130,7 @@ then
         fi
         echo -n "."
     done
-    echo ".done"
+    echo ".done!"
     if [ $DupSrcFileFlag -gt 0 ]
     then
         echo "Keeping existing export file."
@@ -140,7 +140,7 @@ then
         echo "Keeping existing modified file."
     fi
 else
-    echo "Not checking for duplicate scripts."
+    echo "Can not check for duplicate scripts."
 fi
 return 0
 }
@@ -295,41 +295,12 @@ fi
 # Then make any necessary changes for a non-router environment
 ######## Begin New Code ######
 if [[ -n "$ExtEnv" ]] ; then
-    
+    # Parse the $ModFileSource for parameters in the head and use them as vars.
     for NewCommnd in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
-        echo "$NewCommnd"
-        # $("$NewCommnd")
         eval "$NewCommnd"  # WORKS! -- There's a better way, but this works.
-        # $("${NewCommnd}")
     done
     OSVer=`echo "$OrigVersion" | cut -d ' ' -f2`
-    ModFileDest="$OrigRunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
-    echo "OSVer=$OSVer"                                     #DEBUG
-    echo "WorkDir =$WorkDir"                                #DEBUG
-    echo "OrigScriptVersion=$OrigScriptVersion"             #DEBUG
-    echo "OrigRouterName=$OrigRouterName"                   #DEBUG
-    echo "OrigRunDate=$OrigRunDate"                         #DEBUG
-    echo "OrigVersion=$OrigVersion"                         #DEBUG
-    echo "ModFileDest=$ModFileDest"                         #DEBUG
-    # echo "Running outside router, exiting as Debug step"    #DEBUG
-    # exit                                                    #DEBUG
- 
-    # If *nix environment then:
-    #   Grep for 
-    #       OrigRouterName="bunt-77070-router-03"    ###DIFFIGNORE###
-    #       OrigRunDate="2015-12-03-0349"  ###DIFFIGNORE###
-    #       OrigVersion="1.28.0000 MIPSR2-131 K26AC USB VPN-64K"    ###DIFFIGNORE###
-    #
-    #   Change $OSVer to OrigVersion (nb: output should be full version, name
-    #       should be truncated to MIPSR2-131 or similar. How did we do that
-    #       earlier in the program?) 
-    #       Like this!: OSVer=`nvram get os_version | cut -d ' ' -f2`
-    #       Need to keep the full string for the output script (OrigVersion)
-    #       and work with $OSVer.
-    #
-    # Set $ModFileDest appropriately (This was set at initialization, so can mod
-    #   here with no reprecussions.)
-    # Then carry on with our rat-killing as normal
+    ModFileDest="$RunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
 fi
 
 ######### Original code below this line ##################
@@ -419,7 +390,6 @@ then
 else
     echo ".done, no parameters changed!"
 fi
-# exit                            # DEBUG
 return 0
 }
 
