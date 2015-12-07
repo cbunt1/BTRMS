@@ -15,7 +15,7 @@
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
 clear
-ScriptVersion="1.2.1"
+ScriptVersion="1.3.0-alpha"
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
 echo -e "Copyright (C) 2015  Chris A. Bunt" \n
 echo "This program comes with ABSOLUTELY NO WARRANTY."
@@ -33,8 +33,33 @@ else
     #if not invoking from within a router, setup external environment
     RouterName=`uname -n`
     OSVer=`uname -i`
-    ExtEnv=1
     echo ".running outside a router."
+    ExtEnv=1
+    # Put the rest of the non-router confirmations here and save a lot of hassle
+    
+##### New Code Begins Here ##                      # DEBUG
+    # Validate that we're calling a valid non-router mode
+    ValidMode="modify test"
+    echo "Debug: Parsing module names" # DEBUG
+    echo "Debug: \$1=$1" # DEBUG
+    for ModName in $ValidMode ; do
+        echo "Debug: ModName=$ModName"  # DEBUG
+        if [ "$1" = "$ModName" ] ; then GoodMode=1 ; fi
+    done
+    if [[ ! -n $GoodMode ]] ; then echo "Fatal error: mode \"$1\" not valid in this environment."
+        exit 1 ; fi
+    echo "Debug: Passed mode test" #DEBUG
+    # Validate that we have a valid filename to work from.
+    if [[ ! -n $2 ]] ; then echo "Fatal error: mode \"$1\" requires filename outside router."
+        exit 1 ; fi 
+    # And that we can actually read it.
+    if [[ ! -r "$2" ]] ; then echo "Fatal error: Cannot read \"$2\". Check filename and permissions."
+        exit 1 ; fi
+    exit    # DEBUG
+    #
+    #
+##### New Code Ends Here ##                        # DEBUG
+    
 fi
 # Remainder of variables work in either environment.
 echo -n "Testing to see if we can write to `pwd`.."
@@ -97,7 +122,6 @@ then
 fi
 
 # If we have 'diff' on board, let's go ahead and prevent duplicates.
-# But only if we were invoked inside a router.
 if which diff &> /dev/null
 then
     DupSrcFileFlag=0
@@ -120,7 +144,8 @@ then
         if [ -f "$ModFileDest" ]
         then
             if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && 
-				[[ ${TestFile##*/} != "$ModFileDest" ]] && [[ ${TestFile} != "$ModFileDest"  ]] # Seems like we can put some logic here
+				[[ ${TestFile##*/} != "$ModFileDest" ]] && 
+                [[ ${TestFile} != "$ModFileDest"  ]]
             then
                 DupModFileFlag=$((DupModFileFlag+1))
                 DupModFile=${TestFile}
