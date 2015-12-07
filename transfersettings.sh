@@ -1,6 +1,6 @@
 #!/bin/sh
 ###############################################################################
-# Copyright (C) 2015  Chris A. Bunt (cbunt1@yahoo.com)
+# Copyright (c) 2015  Chris A. Bunt (cbunt1@yahoo.com)
 #   All rights reserved.
 #   This program comes with ABSOLUTELY NO WARRANTY.
 #   This is free software, and you are welcome to redistribute it.
@@ -15,7 +15,7 @@
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
 clear
-ScriptVersion="1.2.1"
+ScriptVersion="1.3.0-alpha"
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
 echo -e "Copyright (C) 2015  Chris A. Bunt" \n
 echo "This program comes with ABSOLUTELY NO WARRANTY."
@@ -23,7 +23,7 @@ echo "This is free software, and you are welcome to redistribute it."
 echo -e "See the file LICENSE for details." \n
 echo "Initializing router maintenance script."
 echo -n "Setting global variables..."
-if [[ -x /bin/nvram ]]  # /bin/nvram only exists on router environments
+if [ $(uname -m) = "mips" ]  # mips is router environment
 then
     # If invoking from within a router
     RouterName=`nvram get router_name`
@@ -32,16 +32,28 @@ then
 else
     #if not invoking from within a router, setup external environment
     RouterName=`uname -n`
-    OSVer=`uname -i`
-    ExtEnv=1
+    OSVer=`uname -m`
     echo ".running outside a router."
+    ExtEnv=1
+    ValidMode="modify"  # Valid modes outside mips hardware
+     if [[ ! -n $1 ]] ; then continue ; else
+     for ModName in $ValidMode ; do 
+            if [ $1 = "$ModName" ] ; then GoodMode=1 ; fi
+        done
+        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware."
+            exit 1 ; fi
+        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware."
+            exit 1 ; fi
+    fi   
 fi
 # Remainder of variables work in either environment.
 echo -n "Testing to see if we can write to `pwd`.."
 if [[ -w "./" ]]
 then
     echo ".yes!"
+    if [[ -n "$ExtEnv" ]] ; then WorkDir=`pwd` ; else
     WorkDir="./$RouterName"
+    fi
 else
     echo ".no, using /tmp"
     WorkDir="/tmp/$RouterName"
@@ -55,12 +67,12 @@ ModFileSource="$2"
 ModFileDest="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer-mod.sh"
 echo -e "
 ==============================================================================
-                  Buntster's Tomato Router Manipulation Tools
+                Buntster's Tomato Router Maintenance Tools
 ==============================================================================
-\e[0;33mTomato router manipulation tool run on : \e[0;32m$RunDate\e[0m
-\e[0;33mRouter name is                         : \e[0;32m$RouterName\e[0m
-\e[0;33mCurrent software version is            : \e[0;32m$OSVer\e[0m
-\e[0;33mCreating working directory             : \e[0;32m$WorkDir\e[0m
+\e[0;33mTomato router maintenance tool run on   : \e[0;32m$RunDate\e[0m
+\e[0;33mRouter name is                          : \e[0;32m$RouterName\e[0m
+\e[0;33mCurrent software version is             : \e[0;32m$OSVer\e[0m
+\e[0;33mCreating working directory              : \e[0;32m$WorkDir\e[0m
 ==============================================================================
 \e[0m "
 
@@ -80,11 +92,11 @@ echo ".done!"
 
 CleanTmpFiles()
 {
-##############################################################################
+###############################################################################
 # Clean up after ourselves. Delete the temp directory, and if for some reason
 #   we didn't write to $WorkDir, delete it. If we have working 'diff', Verify
 #   we aren't creating a duplicate export or modify script. 
-##############################################################################
+###############################################################################
 
 echo -e -n  "Removing temporary directory..."
 rm -Rf "$TmpDir"
@@ -100,12 +112,13 @@ then
     DupSrcFileFlag=0
     DupModFileFlag=0
     echo -n "Checking for duplicate scripts.."
-    for FILENAME in `ls -1 "$WorkDir"`
+    for FileName in `ls -1 "$WorkDir"`
     do
-        TestFile=$WorkDir/${FILENAME}
+        TestFile=$WorkDir/${FileName}
         if [ -f "$OutputFile" ]
         then
-            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && [[ ${TestFile} != "$OutputFile" ]]
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$OutputFile" &> /dev/null ) && 
+				[[ ${TestFile} != "$OutputFile" ]]
             then
                 DupSrcFileFlag=$((DupSrcFileFlag+1))
                 DupSourceFile=${TestFile}
@@ -115,7 +128,9 @@ then
         fi
         if [ -f "$ModFileDest" ]
         then
-            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && [[ ${TestFile} != "$ModFileDest" ]]
+            if ( diff -q -I 'DIFFIGNORE' ${TestFile} "$ModFileDest" &> /dev/null ) && 
+				[[ ${TestFile##*/} != "$ModFileDest" ]] && 
+                [[ ${TestFile} != "$ModFileDest"  ]]
             then
                 DupModFileFlag=$((DupModFileFlag+1))
                 DupModFile=${TestFile}
@@ -125,7 +140,7 @@ then
         fi
         echo -n "."
     done
-    echo ".done"
+    echo ".done!"
     if [ $DupSrcFileFlag -gt 0 ]
     then
         echo "Keeping existing export file."
@@ -135,9 +150,9 @@ then
         echo "Keeping existing modified file."
     fi
 else
-    echo "Sorry,no 'diff' binary on board, cannot check for duplicates."
+    echo "Can not check for duplicate scripts."
 fi
-return 0   
+return 0
 }
 
 NVRAMExportRaw()
@@ -174,7 +189,7 @@ ParameterExport()
 # INPUTS:       $TmpDir/Tempfile-01 -- Raw nvram export file
 #
 # OUTPUTS:      $TmpDir/TempFile-04 -- Final list of nvram network parameters
-#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters 
+#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters
 #
 # VARIABLES:    "TROUBLE_PARAMS"  -- Specifically identified trouble parameters
 #               "PRIORITY_PARAMS" -- to identify and adjust parameter order
@@ -279,12 +294,22 @@ ParameterMod()
 # OUTPUTS: $ModFileDest: The updated router configuration script created here.
 ###############################################################################
 
+# First, check that we can read the source file
 if [[ ! -r "$ModFileSource" ]]
 then
     echo "Cannot read $ModFileSource, check your file name and permissions."
     echo "Cannot continue."
     CleanTmpFiles
     exit
+fi
+# Then make any necessary changes for a non-router environment
+if [[ -n "$ExtEnv" ]] ; then
+    # Parse the $ModFileSource for parameters in the head and use them as vars.
+    for NewCommnd in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
+        eval "$NewCommnd"  # WORKS! -- There's a better way, but this works.
+    done
+    OSVer=`echo "$OrigVersion" | cut -d ' ' -f2`
+    ModFileDest="$RunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
 fi
 
 CHANGE_PARAMS="
@@ -321,7 +346,7 @@ wl1.1_wpa_psk
 wl_wpa_psk
 "
 
-echo -n "Parsing to separate network specifics..."
+echo -n "Parsing to separate updatable parameters..."
 for PARAMETER in $CHANGE_PARAMS
 do
     fgrep "$PARAMETER" "$ModFileSource" | sed -e 's/nvram set //g' >> "$TmpDir/TempFile-11"
@@ -393,33 +418,35 @@ GenerateConfigScript()
 echo \
 "#!/bin/sh
 ###############################################################################
+# Buntster's Tomato Router Maintenance System (BTRMS) Version $ScriptVersion
+# Copyright (c) 2015 Chris A. Bunt (cbunt1@yahoo.com)
+# This is free software and comes with ABSOLUTELY NO WARRANTY.
 #
-# Auto-Generated script file to load the configuration of an Asus RT-66-AU
+# Auto-Generated script file to load the configuration of a Tomato-based
 #   router from one router to another. Using this script will erase any and
 #   all existing configurations on your router. USE WITH CARE!!
-#
 ###############################################################################
 " > "$OutputFile"
 if [[ -n "$ExtEnv" ]]
 then
-    echo "ORIGVERSION=\"$OSVer\"    ###DIFFIGNORE###" >> "$OutputFile"
+    echo "OrigVersion=\"$OrigVersion\"    ###DIFFIGNORE###" >> "$OutputFile"
 else
-    echo "ORIGVERSION=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
+    echo "OrigVersion=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 fi
 # Put variable outputs here, so we don't have to contend with quoting issues
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
 # for duplicate files. If you do not have a working diff it will not matter.
 echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
-echo "OrigScriptVersion=\"$ScriptVersion\"  ###DIFFIGNORE###" >> "$OutputFile"
+echo "OrigScriptVersion=\"$ScriptVersion\"" >> "$OutputFile"
 echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
-
 echo \ '
 WriteToNvram()
 {
-#############################################################################
-# Module to commit nvram and pause for 15 seconds on each side. This may or #
-#   may not be a superstition, but it doesnt seem to hurt anything.         #
-#############################################################################
+###############################################################################
+# Module to commit nvram and pause for 15 seconds on each side. The wait time #
+#   may or may not be a superstition, but it doesnt seem to hurt anything.    #
+#   No harm, no foul, watch the cool dotted output.                           #
+###############################################################################
 
 echo -n "Save to NVRAM phase 1/2, this takes a few seconds..."
 ElapsedLoops=0
@@ -443,8 +470,11 @@ echo ".done!"
 }
 ' >> "$OutputFile"
 echo \ '
-CURRENTVERSION="`nvram get os_version`"
-if [[ "$ORIGVERSION" != "$CURRENTVERSION" ]]
+if [ $(uname -m) != "mips" ] ; then 
+    echo "Error: script only runs on mips hardare. Exiting."
+    exit 1
+fi
+if [ "$OrigVersion" != "$(nvram get os_version)" ]
 then
     echo \
 "
@@ -458,8 +488,8 @@ This router is not running the same version of the firmware
 as the script contained within. This script was generated for
 a different version.
 
-ORIGINAL FIRMWARE: $ORIGVERSION
-CURRENT FIRMWARE : $CURRENTVERSION
+ORIGINAL FIRMWARE: $OrigVersion
+CURRENT FIRMWARE : $(nvram get os_version)
 
 This may present problems. These versions do not match. Proceed with care!
 "
@@ -474,11 +504,11 @@ fi
 clear
 echo -e "
 ==============================================================================
-                  Buntsters Tomato Router Manipulation Tools
+                  Buntsters Tomato Router Maintenance Tools
 ==============================================================================
 \e[0;33mOriginal Script Date (yyyy-mm-dd-hhmm)      : \e[0;32m$OrigRunDate\e[0m
 \e[0;33mOriginal Router Name                        : \e[0;32m$OrigRouterName\e[0m
-\e[0;33mGenerated by manipulation script version    : \e[0;32m$OrigScriptVersion\e[0m
+\e[0;33mGenerated by Maintenance tool version       : \e[0;32m$OrigScriptVersion\e[0m
 ==============================================================================
 \e[0m
 
@@ -577,9 +607,9 @@ return 0
 
 case $CmdLnOpt in
 export)
-##############################################################################
+###############################################################################
 # Configuration Export Routine
-##############################################################################
+###############################################################################
 
 CreateWorkDir         # Create a working directory
 NVRAMExportRaw        # Exports the contents of the running NVRAM to a file
@@ -591,11 +621,11 @@ output                # Communicate with the user
 
 modify)
 
-##############################################################################
+###############################################################################
 # Router Swap Script Routine
-##############################################################################
+###############################################################################
 
-CreateWorkDir                     # Create a working directory
+CreateWorkDir                   # Create a working directory
 if [[ -z "$ModFileSource" ]]
 then
     echo "ModFileSource not passed at command line, means we need to create"
@@ -610,7 +640,6 @@ output                          # Communicate with the user
 ;;
 
 *)
-clear
 echo "
 USAGE: $0 [export|modify] [filename]
 
@@ -619,12 +648,12 @@ OPTIONS
 export      Exports nvram configuration into a portable restoration script for
             backup, or settings transfer to a hardware-identical router.
  
-modify      In interactive mode (default) creates a portable restoration identical
-            to export mode, then allows direct modifications to several key 
-            parameters as direct entry. Passing a [filename] performs modifies 
-            the specified pre-existing file. 
+modify      In interactive mode (default) creates a portable restoration just
+            like export mode, then allows direct modifications to several key
+            parameters as direct entry. Passing a [filename] performs modifies
+            the specified pre-existing file.
 
-[filename]  Optional existing filename to modify.
+[filename]  Optional: existing filename to modify.
 
 Copyright (c) 2015 Chris A. Bunt (cbunt1@yahoo.com)
 This program comes with ABSOLUTELY NO WARRANTY.
