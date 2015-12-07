@@ -1,5 +1,11 @@
 Combined Changelog
 
+2015-12-07
+transfersettings.sh
+    - Finish the off-router routines so they work in *nix, and can now make
+        modifications to existing scripts from outside a router.
+    - Added a "run only in router" routine to the output script.
+
 2015-12-02
 
 remote-exec.sh:
