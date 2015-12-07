@@ -23,7 +23,7 @@ echo "This is free software, and you are welcome to redistribute it."
 echo -e "See the file LICENSE for details." \n
 echo "Initializing router maintenance script."
 echo -n "Setting global variables..."
-if [[ -x /bin/nvram ]]  # /bin/nvram only exists on router environments
+if [ $(uname -m) = "mips" ]  # mips is router environment
 then
     # If invoking from within a router
     RouterName=`nvram get router_name`
@@ -32,36 +32,19 @@ then
 else
     #if not invoking from within a router, setup external environment
     RouterName=`uname -n`
-    OSVer=`uname -i`
+    OSVer=`uname -m`
     echo ".running outside a router."
     ExtEnv=1
-    # Put the rest of the non-router confirmations here and save a lot of hassle
-    
-##### New Code Begins Here ##                      # DEBUG
-    # Validate that we're calling a valid non-router mode
-    ValidMode="modify"
-    echo "Debug: Parsing module names" # DEBUG
-    echo "Debug: \$1=$1" # DEBUG
-    if [[ ! -n $1 ]] ; then echo "Debug: Nul value is OK" ; else
-        for ModName in $ValidMode ; do
-            echo "Debug: ModName=$ModName"  # DEBUG
-            if [ "$1" = "$ModName" ] ; then GoodMode=1 ; fi
+    ValidMode="modify"  # Valid modes outside mips hardware
+     if [[ ! -n $1 ]] ; then continue ; else
+     for ModName in $ValidMode ; do 
+            if [ $1 = "$ModName" ] ; then GoodMode=1 ; fi
         done
-        if [[ ! -n $GoodMode ]] ; then echo "Fatal error: mode \"$1\" not valid in this environment."
+        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware."
             exit 1 ; fi
-        echo "Debug: Passed mode test" #DEBUG
-        # Validate that we have a valid filename to work from.
-        if [[ ! -n $2 ]] ; then echo "Fatal error: mode \"$1\" requires filename outside router."
-            exit 1 ; fi 
-        # And that we can actually read it.
-        if [[ ! -r "$2" ]] ; then echo "Fatal error: Cannot read \"$2\". Check filename and permissions."
+        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware."
             exit 1 ; fi
-    fi
-    # exit    # DEBUG
-    #
-    #
-##### New Code Ends Here ##                        # DEBUG
-    
+    fi   
 fi
 # Remainder of variables work in either environment.
 echo -n "Testing to see if we can write to `pwd`.."
@@ -320,7 +303,6 @@ then
     exit
 fi
 # Then make any necessary changes for a non-router environment
-######## Begin New Code ######
 if [[ -n "$ExtEnv" ]] ; then
     # Parse the $ModFileSource for parameters in the head and use them as vars.
     for NewCommnd in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
@@ -329,9 +311,6 @@ if [[ -n "$ExtEnv" ]] ; then
     OSVer=`echo "$OrigVersion" | cut -d ' ' -f2`
     ModFileDest="$RunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
 fi
-
-######### Original code below this line ##################
-
 
 CHANGE_PARAMS="
 router_name
@@ -439,11 +418,13 @@ GenerateConfigScript()
 echo \
 "#!/bin/sh
 ###############################################################################
+# Buntster's Tomato Router Maintenance System (BTRMS) Version $ScriptVersion
+# Copyright (c) 2015 Chris A. Bunt (cbunt1@yahoo.com)
+# This is free software and comes with ABSOLUTELY NO WARRANTY.
 #
-# Auto-Generated script file to load the configuration of an Asus RT-66-AU
+# Auto-Generated script file to load the configuration of a Tomato-based
 #   router from one router to another. Using this script will erase any and
 #   all existing configurations on your router. USE WITH CARE!!
-#
 ###############################################################################
 " > "$OutputFile"
 if [[ -n "$ExtEnv" ]]
@@ -456,7 +437,7 @@ fi
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
 # for duplicate files. If you do not have a working diff it will not matter.
 echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
-echo "OrigScriptVersion=\"$ScriptVersion" >> "$OutputFile"
+echo "OrigScriptVersion=\"$ScriptVersion\"" >> "$OutputFile"
 echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
 echo \ '
 WriteToNvram()
@@ -489,8 +470,11 @@ echo ".done!"
 }
 ' >> "$OutputFile"
 echo \ '
-CURRENTVERSION="`nvram get os_version`"
-if [[ "$ORIGVERSION" != "$CURRENTVERSION" ]]
+if [ $(uname -m) != "mips" ] ; then 
+    echo "Error: script only runs on mips hardare. Exiting."
+    exit 1
+fi
+if [ "$OrigVersion" != "$(nvram get os_version)" ]
 then
     echo \
 "
@@ -504,8 +488,8 @@ This router is not running the same version of the firmware
 as the script contained within. This script was generated for
 a different version.
 
-ORIGINAL FIRMWARE: $ORIGVERSION
-CURRENT FIRMWARE : $CURRENTVERSION
+ORIGINAL FIRMWARE: $OrigVersion
+CURRENT FIRMWARE : $(nvram get os_version)
 
 This may present problems. These versions do not match. Proceed with care!
 "
@@ -520,11 +504,11 @@ fi
 clear
 echo -e "
 ==============================================================================
-                  Buntsters Tomato Router Manipulation Tools
+                  Buntsters Tomato Router Maintenance Tools
 ==============================================================================
 \e[0;33mOriginal Script Date (yyyy-mm-dd-hhmm)      : \e[0;32m$OrigRunDate\e[0m
 \e[0;33mOriginal Router Name                        : \e[0;32m$OrigRouterName\e[0m
-\e[0;33mGenerated by manipulation script version    : \e[0;32m$OrigScriptVersion\e[0m
+\e[0;33mGenerated by Maintenance tool version       : \e[0;32m$OrigScriptVersion\e[0m
 ==============================================================================
 \e[0m
 

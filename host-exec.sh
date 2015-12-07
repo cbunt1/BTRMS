@@ -25,7 +25,7 @@ BackupStorageDir="./RouterBackups"      # Dir where we store the backups
 DropBearRSA="$HOME/.ssh/id_rsa.db"      # Location of Dropbear identity file
 
 # Initialize non-user variables -- probably shouldn't change these.
-SysType=`uname -m`                       # if return 'mips' we're in a router.
+# SysType=`uname -m` #Deprecated         # if return 'mips' we're in a router.
 
 # Do not edit below this line unless you want to change the actual program.
 
@@ -50,12 +50,14 @@ fi
 grep -v '^#' "$RemoteHosts" | while read -r MachineName
 do 
         echo -n "Backing up $MachineName.."
-        if [ $SysType == "mips" ]
+        # if [ $SysType == "mips" ] # Deprecated
+        if [ $(uname -m) = "mips" ]
         then
         RemoteFile=`ssh -T ${RemoteUserID}@${MachineName} -i ${DropBearRSA} '/bin/sh -s' < ${RemoteScript}` && scp -pri "$DropBearRSA" "$RemoteUserID@$RemoteFile" "$BackupStorageDir"
         echo ".done!"
         else
         RemoteFile=`ssh ${RemoteUserID}@${MachineName} '/bin/sh' < ${RemoteScript}` &&  scp -Cpr "$RemoteUserID"@"$RemoteFile" "$BackupStorageDir"
+        echo ".done!"
         fi
 done
 
