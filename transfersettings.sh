@@ -39,23 +39,25 @@ else
     
 ##### New Code Begins Here ##                      # DEBUG
     # Validate that we're calling a valid non-router mode
-    ValidMode="modify test"
+    ValidMode="modify"
     echo "Debug: Parsing module names" # DEBUG
     echo "Debug: \$1=$1" # DEBUG
-    for ModName in $ValidMode ; do
-        echo "Debug: ModName=$ModName"  # DEBUG
-        if [ "$1" = "$ModName" ] ; then GoodMode=1 ; fi
-    done
-    if [[ ! -n $GoodMode ]] ; then echo "Fatal error: mode \"$1\" not valid in this environment."
-        exit 1 ; fi
-    echo "Debug: Passed mode test" #DEBUG
-    # Validate that we have a valid filename to work from.
-    if [[ ! -n $2 ]] ; then echo "Fatal error: mode \"$1\" requires filename outside router."
-        exit 1 ; fi 
-    # And that we can actually read it.
-    if [[ ! -r "$2" ]] ; then echo "Fatal error: Cannot read \"$2\". Check filename and permissions."
-        exit 1 ; fi
-    exit    # DEBUG
+    if [[ ! -n $1 ]] ; then echo "Debug: Nul value is OK" ; else
+        for ModName in $ValidMode ; do
+            echo "Debug: ModName=$ModName"  # DEBUG
+            if [ "$1" = "$ModName" ] ; then GoodMode=1 ; fi
+        done
+        if [[ ! -n $GoodMode ]] ; then echo "Fatal error: mode \"$1\" not valid in this environment."
+            exit 1 ; fi
+        echo "Debug: Passed mode test" #DEBUG
+        # Validate that we have a valid filename to work from.
+        if [[ ! -n $2 ]] ; then echo "Fatal error: mode \"$1\" requires filename outside router."
+            exit 1 ; fi 
+        # And that we can actually read it.
+        if [[ ! -r "$2" ]] ; then echo "Fatal error: Cannot read \"$2\". Check filename and permissions."
+            exit 1 ; fi
+    fi
+    # exit    # DEBUG
     #
     #
 ##### New Code Ends Here ##                        # DEBUG
@@ -654,7 +656,6 @@ output                          # Communicate with the user
 ;;
 
 *)
-clear
 echo "
 USAGE: $0 [export|modify] [filename]
 
@@ -664,11 +665,11 @@ export      Exports nvram configuration into a portable restoration script for
             backup, or settings transfer to a hardware-identical router.
  
 modify      In interactive mode (default) creates a portable restoration just
-			like export mode, then allows direct modifications to several key 
-            parameters as direct entry. Passing a [filename] performs modifies 
+            like export mode, then allows direct modifications to several key
+            parameters as direct entry. Passing a [filename] performs modifies
             the specified pre-existing file.
 
-[filename]  Optional existing filename to modify.
+[filename]  Optional: existing filename to modify.
 
 Copyright (c) 2015 Chris A. Bunt (cbunt1@yahoo.com)
 This program comes with ABSOLUTELY NO WARRANTY.
