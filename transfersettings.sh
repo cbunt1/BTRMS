@@ -15,7 +15,7 @@
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
 
-ScriptVersion="1.3.0-alpha"
+ScriptVersion="1.3.3-beta"
 
 clear
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
@@ -143,14 +143,16 @@ then
         echo -n "."
     done
     echo ".done!"
-    if [ $DupSrcFileFlag -gt 0 ]
-    then
-        echo "Keeping existing export file."
-    fi
-    if [ $DupModFileFlag -gt 0 ]
-    then
-        echo "Keeping existing modified file."
-    fi
+##### Deprecate this useless code. 
+    # if [ $DupSrcFileFlag -gt 0 ]
+    # then
+        # echo "Keeping existing export file."
+    # fi
+    # if [ $DupModFileFlag -gt 0 ]
+    # then
+        # echo "Keeping existing modified file."
+    # fi
+##### End deprecated code.
 else
     echo "Can not check for duplicate scripts."
 fi
@@ -191,12 +193,10 @@ ParameterExport()
 #
 # OUTPUTS:      $TmpDir/TempFile-03 -- Final list of nvram parameters
 #
-# VARIABLES:    "TROUBLE_PARAMS"  -- Specifically identified trouble parameters
-#               "PRIORITY_PARAMS" -- to identify and adjust parameter order
-#               "DISCARD_PARAMS"  -- Hardware-specific parameters to remove
+# VARIABLES:    "ProblemParams"  -- Specifically identified trouble parameters
 ###############################################################################
 
-NetworkParams="
+ProblemParams="
 hwaddr
 macaddr
 mac_wan
@@ -214,15 +214,12 @@ wan_get_dns
 wan_gateway_get
 wan_ipaddr
 wan_netmask
-"
-
-TroubleParams="
 iptables
 "
 
 # Remove hardware specific and other problem parameters
 echo -n "Creating a list of problematic parameters to remove..."
-for Parameter in $NetworkParams $TroubleParams
+for Parameter in $ProblemParams
 do
     echo "$Parameter" 
 done > "$TmpDir/TempFile-02"
@@ -231,21 +228,6 @@ echo ".done!"
 echo -n "Removing problematic parameters.."
 fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
 echo ".done!"
-
-# Sort out the network specific entries
-### Start code changes...This code is deprecated.
-#
-# echo -n "Parsing to separate network specifics...."
-# for Parameter in $PriorityParams
-# do
-#     fgrep "$Parameter" "$TmpDir/TempFile-03" 
-# done > "$TmpDir/TempFile-04"
-# echo ".done!"
-
-# Drop Duplicate Parameters
-# echo -n "Removing duplicate parameters.."
-# fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" > "$TmpDir/TempFile-05"
-# echo ".done!"
 
 return 0
 }
@@ -277,8 +259,8 @@ fi
 # Then make any necessary changes for a non-router environment
 if [[ -n "$ExtEnv" ]] ; then
     # Parse the $ModFileSource for parameters in the head and use them as vars.
-    for NewCommnd in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
-        eval "$NewCommnd"  # WORKS! -- There's a better way, but this works.
+    for NewCommand in "`fgrep '##DIFFIGNORE##' "$ModFileSource"`" ; do
+        eval "$NewCommand"  # WORKS! -- There's a better way, but this works.
     done
     OSVer=`echo "$OrigVersion" | cut -d ' ' -f2`
     ModFileDest="$RunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
@@ -339,21 +321,21 @@ the default (existing) settings. Do NOT quote parameters -- they are entered
 automatically by the script. Enter 'nul' to clear an existing value.
 ==============================================================================
 "
-for LINE in `cat $TmpDir/TempFile-11`
+for Line in `cat $TmpDir/TempFile-11`
 do
-    VARIABLE=`echo "$LINE" | cut -d '=' -f1`
-    VALUE_OLD=`echo "$LINE" | cut -d '=' -f2`
-    echo -e -n "\e[1;32m$VARIABLE\e[0m"="[\e[1;34m$VALUE_OLD\e[0m]: "
-    read VALUE_NEW
-    if [[ "$VALUE_NEW" = "nul" ]]
+    Variable=`echo "$Line" | cut -d '=' -f1`
+    ValueOld=`echo "$Line" | cut -d '=' -f2`
+    echo -e -n "\e[1;32m$Variable\e[0m"="[\e[1;34m$ValueOld\e[0m]: "
+    read ValueNew
+    if [[ "$ValueNew" = "nul" ]]
     then
-        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="\"\"|" >> $TmpDir/TempFile-12
-    elif [[ ! -n "$VALUE_NEW" ]]
+        echo "s|$Variable"="$ValueOld|$Variable"="\"\"|" >> $TmpDir/TempFile-12
+    elif [[ ! -n "$ValueNew" ]]
     then  
-        VALUE_NEW="$VALUE_OLD"
+        ValueNew="$ValueOld"
     else
-        VALUE_NEW=\""$VALUE_NEW\""
-        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="$VALUE_NEW|" >> $TmpDir/TempFile-12
+        ValueNew=\""$ValueNew\""
+        echo "s|$Variable"="$ValueOld|$Variable"="$ValueNew|" >> $TmpDir/TempFile-12
     fi    
 done 
 
@@ -377,8 +359,7 @@ GenerateConfigScript()
 #   that can be run on another router. This is where it all comes together. 
 #   n: The generated script is designed to wipe out your existing config.
 #
-# INPUTS:   $TmpDir/TempFile-04 -- Network parameters only, with 'nvram set'
-#           $TmpDir/TempFile-05 -- All other parameter w/'nvram set' stmt.
+# INPUTS:   $TmpDir/TempFile-03 -- NVRAM Parameters, massaged, with 'nvram set'
 #
 # OUTPUTS:  $OutputFile -- the final script completed, updated, and merged.
 #
