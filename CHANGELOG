@@ -2,13 +2,16 @@ Combined Changelog
 
 2015-12-08
 transfersettings.sh
+    - Elminitated the use of one file in ParameterMod(), and updated all
+        functions to write in a single pass rather than append in loops where
+        possible.
 remote-exec.sh
 host-exec.sh
-    - Modify scripts to direct all error messages to stderr instead of simple
-        stdout, as a matter of proper practice, and to better support the
-        automation/calling from outside scripts with stdout > /dev/null while
-        still letting the user have a clue what went wrong if something isn't
-        right.
+    - Modify all scripts to direct all error messages to stderr instead of 
+        simple stdout, as a matter of proper practice, and to better support 
+        the automation/calling from outside scripts with stdout > /dev/null 
+        while still letting the user have a clue what went wrong if something 
+        isn't right.
 
 2015-12-07
 transfersettings.sh

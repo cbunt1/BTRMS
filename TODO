@@ -5,8 +5,6 @@ For the next (combined) release (Updated 2015-11-29):
 
 PRIMARY GOALS FOR THIS RELEASE:
 
-
-
 1) Update and combine the documentation. What started out as a simple solution 
     to a configuration probem has morphed into a much more sophisticated 
     management tool, and while it's more complex than it needs to be, the
@@ -43,7 +41,8 @@ PRIMARY GOALS FOR THIS RELEASE:
 SECONDARY GOALS (Items under consideration):
 
 1) Take anoher look at the file usage, and reduce at any point possible the 
-    number of writes to the delicate filesystem.
+    number of writes to the delicate filesystem. -- Reduced writes, eliminated
+    one file from ParameterMod().
     
 2) For the next group of changes: Do we really need to "prioritize" those
     network parameters, and do we need to do the two-staged rebuild? This
@@ -66,13 +65,13 @@ BUGS:
     before trapping the fact we're running in *nix. -- 
         OPTION: Trap early, and use pwd as working directory. Back to 
         considering whether we should accept an output file or directory 
-        specification as input on the command line.
+        specification as input on the command line. -- DONE.
     
 2) When running in a *nix environment, we're writing modified scripts out to 
     the working directory that would be appropriate for the "real" environment
     i.e. bunt-77070-centos-01 on the Centos box. This is going to be a global
     behavior of course, but I need to trap/fix it in "offline" modes.
-        OPTION: Proper fix for #1 will also fix #2
+        OPTION: Proper fix for #1 will also fix #2 -- DONE
     
 3) Running in *nix environment, the output filenames are system-appropriate 
     rather than following the structure of the original files. We can probably 
@@ -81,13 +80,13 @@ BUGS:
         OPTION: Pull the output filename from the input filename, pull the output
         filename from data in the file itself, or require/offer it as an option
         from the command line. Advantages of another input parameter are
-        stacking up.
+        stacking up. -- DONE, not using a third parameter yet.
     
 4) Definitely need to add a trap to output scripts to verify that we're running
     in a router before we start setting boatloads of what will become 
     environment variables. No telling what we could foul up on a running *nix 
     box. Probably nothing, since the 'nvram' command will likely bomb, but 
-    let's just not take that chance.
+    let's just not take that chance. -- DONE.
     
 5) Minor,but fix it now. ScriptVersion="1.2.1" variable should be consistent
     across all associated script files (transfersettings.sh, remote-exec.sh,
