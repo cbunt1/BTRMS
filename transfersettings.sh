@@ -14,8 +14,10 @@
 #   ModFileDest -- RouterSwap Completed/merged script file
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
-clear
+
 ScriptVersion="1.3.0-alpha"
+
+clear
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
 echo -e "Copyright (C) 2015  Chris A. Bunt" \n
 echo "This program comes with ABSOLUTELY NO WARRANTY."
@@ -250,30 +252,29 @@ iptables
 
 # Remove hardware specific and other problem parameters
 DISCARD_PARAMS="$NETWORK_PARAMS $TROUBLE_PARAMS"
-echo -n "Creating a list of problematic parameters to remove.."
-for PARAMETER in $DISCARD_PARAMS    
+echo -n "Creating a list of problematic parameters to remove..."
+for PARAMETER in $DISCARD_PARAMS 
 do
-    echo "$PARAMETER" >> "$TmpDir/TempFile-02"
-    echo -n "."
-done
+    echo "$PARAMETER" 
+done > "$TmpDir/TempFile-02"
 echo ".done!"
+
 echo -n "Removing problematic parameters.."
-fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" >> "$TmpDir/TempFile-03"
+fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
 echo ".done!"
 
 # Sort out the network specific entries
-echo -n "Parsing to separate network specifics..."
+echo -n "Parsing to separate network specifics...."
 for PARAMETER in $PRIORITY_PARAMS
 do
-    fgrep "$PARAMETER" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-04"
-    echo -n "."
-done
+    fgrep "$PARAMETER" "$TmpDir/TempFile-03" 
+done > "$TmpDir/TempFile-04"
 echo ".done!"
+
 
 # Drop Duplicate Parameters
 echo -n "Removing duplicate parameters.."
-fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-05"
-echo -n "."
+fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" > "$TmpDir/TempFile-05"
 echo ".done!"
 return 0
 }

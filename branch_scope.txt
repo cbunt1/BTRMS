@@ -1,0 +1,36 @@
+write_to_stderr
+
+Branch scope: Change output behavior of all three scripts to write user info to
+    stdout, and all error messages to stderr.
+    
+Push this to the Develop branch and start a new branch to combine the file
+    efficiency update.
+    
+    -- Works on TempFile-02...(Discard parameters phase 1)
+    
+    
+TempFile-04 - final network parameters
+TempFile-05 - Final all-other parameters
+
+The two combine to make the final script.
+Dumping the two-phase crap will reduce by one file the writes to the flashfs
+    and simplify the re-integration process...Do this as ANOTHER BRANCH instead
+    of combining it with the write modifications, just in case we scrap it.
+  
+ Sorting the logic here....
+ export to tmp-01
+ echo problems to tmp-02
+ use tmp-02 to inverse grep from tmp-01, and write to tmp-03
+ tmp-03 is now our main data file
+ now our "priority_params" are grepped from tmp-03 and directed to tmp-04
+ tmp-04 is used to inverse grep from tmp-03 and directed to tmp-05
+ 
+  Produces 1523 line output.
+  
+  
+===============================================
+Debug snippet
+===============================================  
+echo "Debug: Pausing here to look at files."    # DEBUG
+echo "cat $TmpDir/TempFile-04"  # DEBUG
+exit    # DEBUG
