@@ -5,6 +5,14 @@ transfersettings.sh
     - Elminitated the use of one file in ParameterMod(), and updated all
         functions to write in a single pass rather than append in loops where
         possible.
+    - Reduced the parameter parsing to a single step, bringing the total file
+        write for an export to three -- one raw, one to grep against, and one
+        final. This also eliminates a step in the restoration script, while
+        still allowing for the modification of parameters (which was one of the
+        original reasons to strip out the network parameters.)
+    - Changed variable names in several locations to TitleCap as opposed to all
+        UPPERCASE variables to eliminate possible conflict with environment
+        variables.
 remote-exec.sh
 host-exec.sh
     - Modify all scripts to direct all error messages to stderr instead of 

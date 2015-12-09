@@ -1,0 +1,44 @@
+Branch: quit_split
+
+===============================================================================
+Scope of work: Eliminate the splitting of parameters when dumping the original
+    nvram export. It's not necessary, it creates files we don't need, and it
+    adds complexity to the output and parsing routines.
+===============================================================================
+CUrrent output files:
+-TempFile-04 - final network parameters
+-TempFile-05 - Final all-other parameters
+-
+-The two combine to make the final script.
+-Dumping the two-phase crap will reduce by one file the writes to the flashfs
+-    and simplify the re-integration process...Do this as ANOTHER BRANCH instead
+-    of combining it with the write modifications, just in case we scrap it.
+===============================================================================
+- Sorting the logic here....
+
+- export to tmp-01
+- echo problems to tmp-02
+- use tmp-02 to inverse grep from tmp-01, and write to tmp-03
+- tmp-03 is now our main data file
+- now our "priority_params" are grepped from tmp-03 and directed to tmp-04
+- tmp-04 is used to inverse grep from tmp-03 and directed to tmp-05
+
+Skip the stripping, and we can do it all with tmp03.
+- 
+-  Produces 1523 line output. (quit_split version)
+
+# wc -l bunt-77070-router-03/temp/*
+     1439 bunt-77070-router-03/temp/TempFile-01 -- raw
+       18 bunt-77070-router-03/temp/TempFile-02 -- stripped parameters
+     1383 bunt-77070-router-03/temp/TempFile-03 -- stripped output file
+      485 bunt-77070-router-03/temp/TempFile-04 -- deprecated
+      901 bunt-77070-router-03/temp/TempFile-05 -- deprecated
+     4226 total
+ 
+-  
+-===============================================
+-Debug snippet
+-===============================================  
+-echo "Debug: Pausing here to look at files."    # DEBUG
+-echo "cat $TmpDir/TempFile-04"  # DEBUG
+-exit    # DEBUG   

@@ -183,50 +183,21 @@ ParameterExport()
 ###############################################################################
 # ParameterExport
 #
-# Prioritize particular primary parameters prior to producing (let's see how
-#   many "P's" we can get in here) the final router script. Currently pulls out
-#   the network parameters and sorts them to the top of the output stream,
-#   removes the troublesome parameters and exports the final list of parameters
+# Pull problem-child parameters out of the configuration, including hardware-
+#   identifiers and other fiddly bits that keep us from swapping config files
+#   between otherwise identical routers.
 #
 # INPUTS:       $TmpDir/Tempfile-01 -- Raw nvram export file
 #
-# OUTPUTS:      $TmpDir/TempFile-04 -- Final list of nvram network parameters
-#               $TmpDir/TempFile-05 -- Final list of remaining nvram parameters
+# OUTPUTS:      $TmpDir/TempFile-03 -- Final list of nvram parameters
 #
 # VARIABLES:    "TROUBLE_PARAMS"  -- Specifically identified trouble parameters
 #               "PRIORITY_PARAMS" -- to identify and adjust parameter order
 #               "DISCARD_PARAMS"  -- Hardware-specific parameters to remove
 ###############################################################################
-PriorityParams="
-wan_
-lan_
-lan1_
-lan2_
-lan3_
-dns_
-dhcp_
-dhcpd_
-dhcp1_
-dhcpd1_
-dhcp2_
-dhcpd2_
-dhcp3_
-dhcpd3_
-ddns_
-router_name
-wl_
-wl0_
-wl0.1_
-wl0.2_
-wl0.3_
-wl1_
-wl1.1_
-wl1.2_
-wl1.3_
-ntp_
-"
 
-NetworkParams="hwaddr
+NetworkParams="
+hwaddr
 macaddr
 mac_wan
 sshd_hostkey
@@ -262,17 +233,19 @@ fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
 echo ".done!"
 
 # Sort out the network specific entries
-echo -n "Parsing to separate network specifics...."
-for Parameter in $PriorityParams
-do
-    fgrep "$Parameter" "$TmpDir/TempFile-03" 
-done > "$TmpDir/TempFile-04"
-echo ".done!"
+### Start code changes...This code is deprecated.
+#
+# echo -n "Parsing to separate network specifics...."
+# for Parameter in $PriorityParams
+# do
+#     fgrep "$Parameter" "$TmpDir/TempFile-03" 
+# done > "$TmpDir/TempFile-04"
+# echo ".done!"
 
 # Drop Duplicate Parameters
-echo -n "Removing duplicate parameters.."
-fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" > "$TmpDir/TempFile-05"
-echo ".done!"
+# echo -n "Removing duplicate parameters.."
+# fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" > "$TmpDir/TempFile-05"
+# echo ".done!"
 
 return 0
 }
@@ -507,7 +480,7 @@ echo -e "
 This script is designed to place a configuration on your soon-to-be blanked 
 router. This is a data-destructive process. You have been warned.
 
-The process takes up 5-10 minutes. Do not give up, do not reset the router
+The process takes up 3-5 minutes. Do not give up, do not reset the router
 unless 10 minutes have passed and you are not seeing results.
 
 This script will erase any and all contents of the NVRAM on this router and
@@ -526,15 +499,7 @@ mtd-erase -d nvram > /dev/null
 nvram erase
 WriteToNvram
 ' >> "$OutputFile"
-cat "$TmpDir/TempFile-04" >> "$OutputFile"
-echo \
-'
-echo "Committing network parameters to NVRAM..."
-WriteToNvram
-echo "Network parameters commited to NVRAM!"
-echo "Now entering remaining parameters..."
-' >> "$OutputFile"
-cat "$TmpDir/TempFile-05" >> "$OutputFile"
+cat "$TmpDir/TempFile-03" >> "$OutputFile"
 echo \
 '
 echo "All parameters entered!"
@@ -620,7 +585,7 @@ modify)
 CreateWorkDir                   # Create a working directory
 if [[ -z "$ModFileSource" ]]
 then
-    echo "ModFileSource not passed at command line, means we need to create"
+    echo "No source file indicated, we will create one."
     NVRAMExportRaw              # Exports the contents of the running NVRAM
     ParameterExport             # Re-order the parameters loaded
     GenerateConfigScript        # Builds the configuration script
