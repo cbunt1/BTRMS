@@ -10,9 +10,18 @@ transfersettings.sh
         final. This also eliminates a step in the restoration script, while
         still allowing for the modification of parameters (which was one of the
         original reasons to strip out the network parameters.)
+    - Found a bug in Busybox version of fgrep where it will not accept multiple
+        expresions to match except from a file. This behavior is unique to the
+        router environment, my GNU/Linux machines handle the parsing fine as a
+        variable. Need to work on this a bit more before reporting a bug, but 
+        it looks like a Busybox grep problem. If this gets fixed, we can drop
+        one more file write from the process.
     - Changed variable names in several locations to TitleCap as opposed to all
         UPPERCASE variables to eliminate possible conflict with environment
         variables.
+    - Moved the export/import process to a single phase each. This eliminated 
+        two file creations, several file writes, and greatly simplified the
+        whole parameter export process. 
 remote-exec.sh
 host-exec.sh
     - Modify all scripts to direct all error messages to stderr instead of 

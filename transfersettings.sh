@@ -126,6 +126,7 @@ then
                 DupSourceFile=${TestFile}
                 rm ${OutputFile}
                 OutputFile=${DupSourceFile}
+                echo -n "@"
             fi
         fi
         if [ -f "$ModFileDest" ]
@@ -138,21 +139,12 @@ then
                 DupModFile=${TestFile}
                 rm ${ModFileDest}
                 ModFileDest=${DupModFile}
+                echo -n "@"
             fi
         fi
         echo -n "."
     done
     echo ".done!"
-##### Deprecate this useless code. 
-    # if [ $DupSrcFileFlag -gt 0 ]
-    # then
-        # echo "Keeping existing export file."
-    # fi
-    # if [ $DupModFileFlag -gt 0 ]
-    # then
-        # echo "Keeping existing modified file."
-    # fi
-##### End deprecated code.
 else
     echo "Can not check for duplicate scripts."
 fi
@@ -219,6 +211,9 @@ iptables
 
 # Remove hardware specific and other problem parameters
 echo -n "Creating a list of problematic parameters to remove..."
+# Exporting to file because the busybox version of fgrep can't seem to handle
+#   a variable with newlines for an inverse grep. Arrgh!
+echo -n "Creating a list of problematic parameters to remove..."
 for Parameter in $ProblemParams
 do
     echo "$Parameter" 
@@ -227,6 +222,10 @@ echo ".done!"
 
 echo -n "Removing problematic parameters.."
 fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
+# The below line doesn't work, but maybe in a later version of BusyBox it will.
+#   it works on other versions of GNU/Linux, so there's hope. We can lose a
+#   file write when/if this bug gets corrected or if we add a working fgrep.
+# cat "$TmpDir/TempFile-01" | fgrep -v "$ProblemParams" > "$TmpDir/TempFile-03"
 echo ".done!"
 
 return 0
