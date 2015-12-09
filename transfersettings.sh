@@ -14,8 +14,10 @@
 #   ModFileDest -- RouterSwap Completed/merged script file
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
-clear
+
 ScriptVersion="1.3.0-alpha"
+
+clear
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
 echo -e "Copyright (C) 2015  Chris A. Bunt" \n
 echo "This program comes with ABSOLUTELY NO WARRANTY."
@@ -59,7 +61,7 @@ else
     WorkDir="/tmp/$RouterName"
 fi
 # USER AND GLOBAL VARIABLES
-TmpDir="$WorkDir/temp/"
+TmpDir="$WorkDir/temp"
 RunDate=`date '+%F-%H%M'`
 OutputFile="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer.sh"
 CmdLnOpt="$1"
@@ -195,7 +197,7 @@ ParameterExport()
 #               "PRIORITY_PARAMS" -- to identify and adjust parameter order
 #               "DISCARD_PARAMS"  -- Hardware-specific parameters to remove
 ###############################################################################
-PRIORITY_PARAMS="
+PriorityParams="
 wan_
 lan_
 lan1_
@@ -224,8 +226,7 @@ wl1.3_
 ntp_
 "
 
-NETWORK_PARAMS="
-hwaddr
+NetworkParams="hwaddr
 macaddr
 mac_wan
 sshd_hostkey
@@ -244,37 +245,35 @@ wan_ipaddr
 wan_netmask
 "
 
-TROUBLE_PARAMS="
+TroubleParams="
 iptables
 "
 
 # Remove hardware specific and other problem parameters
-DISCARD_PARAMS="$NETWORK_PARAMS $TROUBLE_PARAMS"
-echo -n "Creating a list of problematic parameters to remove.."
-for PARAMETER in $DISCARD_PARAMS    
+echo -n "Creating a list of problematic parameters to remove..."
+for Parameter in $NetworkParams $TroubleParams
 do
-    echo "$PARAMETER" >> "$TmpDir/TempFile-02"
-    echo -n "."
-done
+    echo "$Parameter" 
+done > "$TmpDir/TempFile-02"
 echo ".done!"
+
 echo -n "Removing problematic parameters.."
-fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" >> "$TmpDir/TempFile-03"
+fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
 echo ".done!"
 
 # Sort out the network specific entries
-echo -n "Parsing to separate network specifics..."
-for PARAMETER in $PRIORITY_PARAMS
+echo -n "Parsing to separate network specifics...."
+for Parameter in $PriorityParams
 do
-    fgrep "$PARAMETER" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-04"
-    echo -n "."
-done
+    fgrep "$Parameter" "$TmpDir/TempFile-03" 
+done > "$TmpDir/TempFile-04"
 echo ".done!"
 
 # Drop Duplicate Parameters
 echo -n "Removing duplicate parameters.."
-fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" >> "$TmpDir/TempFile-05"
-echo -n "."
+fgrep -v -f "$TmpDir/TempFile-04" "$TmpDir/TempFile-03" > "$TmpDir/TempFile-05"
 echo ".done!"
+
 return 0
 }
 
@@ -312,7 +311,7 @@ if [[ -n "$ExtEnv" ]] ; then
     ModFileDest="$RunDate"_"$OrigRouterName"_"$OSVer"-mod.sh
 fi
 
-CHANGE_PARAMS="
+ChangeParams="
 router_name
 lan_hostname
 lan_domain
@@ -347,12 +346,10 @@ wl_wpa_psk
 "
 
 echo -n "Parsing to separate updatable parameters..."
-for PARAMETER in $CHANGE_PARAMS
+for Parameter in $ChangeParams
 do
-    fgrep "$PARAMETER" "$ModFileSource" | sed -e 's/nvram set //g' >> "$TmpDir/TempFile-11"
-    echo -n "."
-done
-fgrep -v echo "$TmpDir/TempFile-11" >> "$TmpDir/TempFile-12"
+    fgrep "$Parameter" "$ModFileSource" | sed -e 's/nvram set //g' 
+done | fgrep -v echo > "$TmpDir/TempFile-11"
 echo ".done!"
 
 # Interactively update the identified parameters
@@ -369,7 +366,7 @@ the default (existing) settings. Do NOT quote parameters -- they are entered
 automatically by the script. Enter 'nul' to clear an existing value.
 ==============================================================================
 "
-for LINE in `cat $TmpDir/TempFile-12`
+for LINE in `cat $TmpDir/TempFile-11`
 do
     VARIABLE=`echo "$LINE" | cut -d '=' -f1`
     VALUE_OLD=`echo "$LINE" | cut -d '=' -f2`
@@ -377,21 +374,21 @@ do
     read VALUE_NEW
     if [[ "$VALUE_NEW" = "nul" ]]
     then
-        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="\"\"|" >> $TmpDir/TempFile-13
+        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="\"\"|" >> $TmpDir/TempFile-12
     elif [[ ! -n "$VALUE_NEW" ]]
     then  
         VALUE_NEW="$VALUE_OLD"
     else
         VALUE_NEW=\""$VALUE_NEW\""
-        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="$VALUE_NEW|" >> $TmpDir/TempFile-13
+        echo "s|$VARIABLE"="$VALUE_OLD|$VARIABLE"="$VALUE_NEW|" >> $TmpDir/TempFile-12
     fi    
 done 
 
 # Now merge it back into the original script file
 echo -n "Merging changes into a final script.."
-if [[ -e "$TmpDir/TempFile-13" ]]
+if [[ -e "$TmpDir/TempFile-12" ]]
 then
-    sed -f "$TmpDir/TempFile-13" <"$ModFileSource" > "$ModFileDest"
+    sed -f "$TmpDir/TempFile-12" <"$ModFileSource" > "$ModFileDest"
     echo ".done!"
 else
     echo ".done, no parameters changed!"
@@ -427,12 +424,7 @@ echo \
 #   all existing configurations on your router. USE WITH CARE!!
 ###############################################################################
 " > "$OutputFile"
-if [[ -n "$ExtEnv" ]]
-then
-    echo "OrigVersion=\"$OrigVersion\"    ###DIFFIGNORE###" >> "$OutputFile"
-else
-    echo "OrigVersion=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
-fi
+echo "OrigVersion=\"`nvram get os_version`\"    ###DIFFIGNORE###" >> "$OutputFile"
 # Put variable outputs here, so we don't have to contend with quoting issues
 # Put a ###DIFFIGNORE### statement on any line you want to ignore when parsing
 # for duplicate files. If you do not have a working diff it will not matter.
