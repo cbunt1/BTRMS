@@ -40,9 +40,9 @@ else
      for ModName in $ValidMode ; do 
             if [ $1 = "$ModName" ] ; then GoodMode=1 ; fi
         done
-        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware."
+        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware." >&2
             exit 1 ; fi
-        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware."
+        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware." >&2
             exit 1 ; fi
     fi   
 fi
@@ -167,7 +167,7 @@ NVRAMExportRaw()
 echo -n "Exporting NVRAM to file.."
 if [[ -n "$ExtEnv" ]]
 then
-    echo "Cannot export nvram outside a router environment. Cowardly exiting!" &&
+    echo "Error: cannot export nvram outside a router environment. Exiting!" >&2 &&
     exit 1
 else
     nvram export --set > "$TmpDir/TempFile-01"
@@ -297,10 +297,10 @@ ParameterMod()
 # First, check that we can read the source file
 if [[ ! -r "$ModFileSource" ]]
 then
-    echo "Cannot read $ModFileSource, check your file name and permissions."
-    echo "Cannot continue."
+    echo "Cannot read $ModFileSource, check your file name and permissions." >&2
+    echo "Cannot continue." >&2
     CleanTmpFiles
-    exit
+    exit 1
 fi
 # Then make any necessary changes for a non-router environment
 if [[ -n "$ExtEnv" ]] ; then
@@ -471,7 +471,7 @@ echo ".done!"
 ' >> "$OutputFile"
 echo \ '
 if [ $(uname -m) != "mips" ] ; then 
-    echo "Error: script only runs on mips hardare. Exiting."
+    echo "Error: script only runs on mips hardare. Exiting." >&2
     exit 1
 fi
 if [ "$OrigVersion" != "$(nvram get os_version)" ]

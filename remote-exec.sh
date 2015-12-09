@@ -15,7 +15,7 @@
 ###############################################################################
 
 # First things first: Are we on a router? If not, cowardly refuse to execute.
-if [ $(uname -m) != "mips" ] ; then echo "Error: script must be run on a router!" &&
+if [ $(uname -m) != "mips" ] ; then echo "Error: script must be run on a router!" >&2 &&
    exit 1
 fi
 

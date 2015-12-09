@@ -44,7 +44,7 @@ echo "See the file LICENSE for details."
 if [[ ! -w "$BackupStorageDir" ]] ; then
     mkdir "$BackupStorageDir"
     # Double check that we can write to the directory we blindly created.
-    if [[ ! -w "$BackupStorageDir" ]] ; then echo "You don't have write access to your storage directory!" && exit ; fi
+    if [[ ! -w "$BackupStorageDir" ]] ; then echo "You don't have write access to your storage directory!" >&2 && exit ; fi
 fi
 
 grep -v '^#' "$RemoteHosts" | while read -r MachineName
