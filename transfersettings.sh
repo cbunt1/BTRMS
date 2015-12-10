@@ -15,7 +15,7 @@
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
 
-ScriptVersion="1.3.3-beta"
+ScriptVersion="1.4.0-beta"
 
 clear
 echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
@@ -78,8 +78,7 @@ echo -e "
 ==============================================================================
 \e[0m "
 
-CreateWorkDir()
-{
+CreateWorkDir()     {
 ###############################################################################
 # CreateWorkDir -- Quietly create temp working directory, provide framework
 #   for sanity checking or debugging should we need it later.
@@ -90,10 +89,9 @@ if [[ -d "$TmpDir" ]] ; then
 echo -n "Creating working directory..."
 mkdir  -p "$TmpDir"
 echo ".done!"
-}
+return 0;   }
 
-CleanTmpFiles()
-{
+CleanTmpFiles()     {
 ###############################################################################
 # Clean up after ourselves. Delete the temp directory, and if for some reason
 #   we didn't write to $WorkDir, delete it. If we have working 'diff', Verify
@@ -148,11 +146,9 @@ then
 else
     echo "Can not check for duplicate scripts."
 fi
-return 0
-}
+return 0;   }
 
-NVRAMExportRaw()
-{
+NVRAMExportRaw()    {
 ###############################################################################
 # Export NVRAM contents to a working file. If not running within a router then
 #   gracefully exit. 
@@ -169,11 +165,9 @@ else
     nvram export --set > "$TmpDir/TempFile-01"
 fi
 echo ".done!"
-return 0
-}
+return 0;   }
 
-ParameterExport()
-{
+ParameterExport()   {
 ###############################################################################
 # ParameterExport
 #
@@ -190,6 +184,8 @@ ParameterExport()
 
 ProblemParams="
 hwaddr
+pci
+noise
 macaddr
 mac_wan
 sshd_hostkey
@@ -227,11 +223,9 @@ fgrep -v -f "$TmpDir/TempFile-02" "$TmpDir/TempFile-01" > "$TmpDir/TempFile-03"
 # cat "$TmpDir/TempFile-01" | fgrep -v "$ProblemParams" > "$TmpDir/TempFile-03"
 echo ".done!"
 
-return 0
-}
+return 0;   }
 
-ParameterMod()
-{
+ParameterMod()  {
 ###############################################################################
 # ParameterMod
 # Present the user with a series of parameter/value pairs and allow the user to
@@ -346,11 +340,9 @@ then
 else
     echo ".done, no parameters changed!"
 fi
-return 0
-}
+return 0;   }
 
-GenerateConfigScript()
-{
+GenerateConfigScript()  {
 ###############################################################################
 # GenerateConfigScript
 # Merge the parts of now split configuration into a single configuration script
@@ -384,15 +376,13 @@ echo "OrigRunDate=\"$RunDate\"  ###DIFFIGNORE###" >> "$OutputFile"
 echo "OrigScriptVersion=\"$ScriptVersion\"" >> "$OutputFile"
 echo "OrigRouterName=\"$RouterName\"    ###DIFFIGNORE###" >> "$OutputFile"
 echo \ '
-WriteToNvram()
-{
+WriteToNvram()  {
 ###############################################################################
-# Module to commit nvram and pause for 15 seconds on each side. The wait time #
-#   may or may not be a superstition, but it doesnt seem to hurt anything.    #
+# Function to commit nvram and pause for 15 seconds before & after. The wait  #
+#   time may or may not be folklore, but it doesnt seem to hurt anything.     #
 #   No harm, no foul, watch the cool dotted output.                           #
 ###############################################################################
-
-echo -n "Save to NVRAM phase 1/2, this takes a few seconds..."
+echo -n "Save to NVRAM phase 1/2, this takes 15 seconds..."
 ElapsedLoops=0
 while [ $ElapsedLoops -lt 15 ]
 do
@@ -402,7 +392,7 @@ do
     done
 echo ".done!"
 nvram commit
-echo -n "Save to NVRAM phase 2/2, this takes a few seconds..."
+echo -n "Save to NVRAM phase 2/2, this takes 15 seconds..."
 ElapsedLoops=0
 while [ $ElapsedLoops -lt 15 ]
 do
@@ -411,8 +401,7 @@ do
     ElapsedLoops=$((ElapsedLoops+1))
     done
 echo ".done!"
-}
-' >> "$OutputFile"
+return 0;   } ' >> "$OutputFile"
 echo \ '
 if [ $(uname -m) != "mips" ] ; then 
     echo "Error: script only runs on mips hardare. Exiting." >&2
@@ -502,11 +491,9 @@ do
 done
 echo ".done!" # should never get this far!
 ' >> "$OutputFile"
-return 0
-}
+return 0;   }
 
-output()
-{
+output()    {
 ##############################################################################
 # Communicate final information to the user, identifying the locations of the
 #   files modified, stored, and output.
@@ -538,8 +525,7 @@ echo \
 NOTE: The generated script(s) are designed to wipe your configuration as a
 first step. THIS IS A DESTRUCTIVE RESTORATION METHOD.
 "
-return 0
-}
+return 0;   }
 
 case $CmdLnOpt in
 export)
