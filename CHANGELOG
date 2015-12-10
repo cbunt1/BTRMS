@@ -1,5 +1,12 @@
 Combined Changelog
 
+2015-12-09
+transfersettings.sh
+    - Restructured functions vs. main code for clarity. Functions are now at
+        top of the file, and no longer split the mainline code.
+    - Added "pci" and "noise" to ProblemParameters to strip from configs.
+    
+
 2015-12-08
 transfersettings.sh
     - Elminitated the use of one file in ParameterMod(), and updated all

@@ -15,68 +15,7 @@
 #   OutputFile  -- Final output file (export) (.sh)
 ###############################################################################
 
-ScriptVersion="1.4.0-beta"
-
-clear
-echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
-echo -e "Copyright (C) 2015  Chris A. Bunt" \n
-echo "This program comes with ABSOLUTELY NO WARRANTY."
-echo "This is free software, and you are welcome to redistribute it."
-echo -e "See the file LICENSE for details." \n
-echo "Initializing router maintenance script."
-echo -n "Setting global variables..."
-if [ $(uname -m) = "mips" ]  # mips is router environment
-then
-    # If invoking from within a router
-    RouterName=`nvram get router_name`
-    OSVer=`nvram get os_version | cut -d ' ' -f2`
-    echo ".operating within a router."
-else
-    #if not invoking from within a router, setup external environment
-    RouterName=`uname -n`
-    OSVer=`uname -m`
-    echo ".running outside a router."
-    ExtEnv=1
-    ValidMode="modify"  # Valid modes outside mips hardware
-     if [[ ! -n $1 ]] ; then continue ; else
-     for ModName in $ValidMode ; do 
-            if [ $1 = "$ModName" ] ; then GoodMode=1 ; fi
-        done
-        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware." >&2
-            exit 1 ; fi
-        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware." >&2
-            exit 1 ; fi
-    fi   
-fi
-# Remainder of variables work in either environment.
-echo -n "Testing to see if we can write to `pwd`.."
-if [[ -w "./" ]]
-then
-    echo ".yes!"
-    if [[ -n "$ExtEnv" ]] ; then WorkDir=`pwd` ; else
-    WorkDir="./$RouterName"
-    fi
-else
-    echo ".no, using /tmp"
-    WorkDir="/tmp/$RouterName"
-fi
-# USER AND GLOBAL VARIABLES
-TmpDir="$WorkDir/temp"
-RunDate=`date '+%F-%H%M'`
-OutputFile="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer.sh"
-CmdLnOpt="$1"
-ModFileSource="$2"
-ModFileDest="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer-mod.sh"
-echo -e "
-==============================================================================
-                Buntster's Tomato Router Maintenance Tools
-==============================================================================
-\e[0;33mTomato router maintenance tool run on   : \e[0;32m$RunDate\e[0m
-\e[0;33mRouter name is                          : \e[0;32m$RouterName\e[0m
-\e[0;33mCurrent software version is             : \e[0;32m$OSVer\e[0m
-\e[0;33mCreating working directory              : \e[0;32m$WorkDir\e[0m
-==============================================================================
-\e[0m "
+ScriptVersion="1.4.2-beta"
 
 CreateWorkDir()     {
 ###############################################################################
@@ -493,7 +432,7 @@ echo ".done!" # should never get this far!
 ' >> "$OutputFile"
 return 0;   }
 
-output()    {
+WriteToScreen()    {
 ##############################################################################
 # Communicate final information to the user, identifying the locations of the
 #   files modified, stored, and output.
@@ -527,6 +466,68 @@ first step. THIS IS A DESTRUCTIVE RESTORATION METHOD.
 "
 return 0;   }
 
+clear
+echo "Buntster's Tomato Router Maintenance System, v$ScriptVersion"
+echo -e "Copyright (C) 2015  Chris A. Bunt" \n
+echo "This program comes with ABSOLUTELY NO WARRANTY."
+echo "This is free software, and you are welcome to redistribute it."
+echo -e "See the file LICENSE for details." \n
+echo "Initializing router maintenance script."
+echo -n "Setting global variables..."
+if [ $(uname -m) = "mips" ]  # mips is router environment
+then
+    # If invoking from within a router
+    RouterName=`nvram get router_name`
+    OSVer=`nvram get os_version | cut -d ' ' -f2`
+    echo ".operating within a router."
+else
+    #if not invoking from within a router, setup external environment
+    RouterName=`uname -n`
+    OSVer=`uname -m`
+    echo ".running outside a router."
+    ExtEnv=1
+    ValidMode="modify"  # Valid modes outside mips hardware
+     if [[ ! -n $1 ]] ; then continue ; else
+     for ModName in $ValidMode ; do 
+            if [ $1 = "$ModName" ] ; then GoodMode=1 ; fi
+        done
+        if [[ ! -n $GoodMode ]] ; then echo "Error: mode \"$1\" invalid on $OSVer hardware." >&2
+            exit 1 ; fi
+        if [[ ! -n $2 ]] || [[ ! -r $2 ]] ; then echo "Error: mode \"$1\" requires valid filename on $OSVer hardware." >&2
+            exit 1 ; fi
+    fi   
+fi
+# Remainder of variables work in either environment.
+echo -n "Testing to see if we can write to `pwd`.."
+if [[ -w "./" ]]
+then
+    echo ".yes!"
+    if [[ -n "$ExtEnv" ]] ; then WorkDir=`pwd` ; else
+    WorkDir="./$RouterName"
+    fi
+else
+    echo ".no, using /tmp"
+    WorkDir="/tmp/$RouterName"
+fi
+# USER AND GLOBAL VARIABLES
+TmpDir="$WorkDir/temp"
+RunDate=`date '+%F-%H%M'`
+OutputFile="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer.sh"
+CmdLnOpt="$1"
+ModFileSource="$2"
+ModFileDest="$WorkDir"/"$RunDate"_"$RouterName"_"$OSVer-mod.sh"
+echo -e "
+==============================================================================
+                Buntster's Tomato Router Maintenance Tools
+==============================================================================
+\e[0;33mTomato router maintenance tool run on   : \e[0;32m$RunDate\e[0m
+\e[0;33mRouter name is                          : \e[0;32m$RouterName\e[0m
+\e[0;33mCurrent software version is             : \e[0;32m$OSVer\e[0m
+\e[0;33mCreating working directory              : \e[0;32m$WorkDir\e[0m
+==============================================================================
+\e[0m "
+
+
 case $CmdLnOpt in
 export)
 ###############################################################################
@@ -538,7 +539,7 @@ NVRAMExportRaw        # Exports the contents of the running NVRAM to a file
 ParameterExport       # Prioritize network parameters to re-order the load
 GenerateConfigScript  # Builds the final configuration script
 CleanTmpFiles         # Deletes temp/working directories as appropriate
-output                # Communicate with the user
+WriteToScreen         # Communicate with the user
 ;;
 
 modify)
@@ -558,7 +559,7 @@ then
 fi
 ParameterMod                    # Change parameters and merge script
 CleanTmpFiles                   # Cleans up temporary directories
-output                          # Communicate with the user
+WriteToScreen                   # Communicate with the user
 ;;
 
 *)
