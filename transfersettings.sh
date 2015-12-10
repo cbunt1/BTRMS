@@ -210,7 +210,6 @@ iptables
 "
 
 # Remove hardware specific and other problem parameters
-echo -n "Creating a list of problematic parameters to remove..."
 # Exporting to file because the busybox version of fgrep can't seem to handle
 #   a variable with newlines for an inverse grep. Arrgh!
 echo -n "Creating a list of problematic parameters to remove..."
