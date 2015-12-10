@@ -92,3 +92,9 @@ BUGS:
     across all associated script files (transfersettings.sh, remote-exec.sh,
     and host-exec.sh)
     
+6) After a flash with 1.3.3-beta, router-03 came back up with Tomato24 as its
+    2g wireless name. Need to check to see if this is a configuration glitch or
+    a parameter export glitch. That router's a test bed, so it could just be 
+    a problem with the config that was onit in the first place, although it 
+    was reporting to the Bunt_admin_wireless_2G network initially.
+    
